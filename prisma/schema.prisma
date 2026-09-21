@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model GovernmentJob {
+  id                      String   @id @default(cuid())
+  slug                    String   @unique
+  post_name               String
+  organization_name       String
+  department              String
+  government_field        String   // SSC, Railway, Banking, Police, Defence, Postal, Teaching, UPSC, State PSC, Engineering, Healthcare, etc.
+  government_level        String   // Central Government, State Government, PSU, Local Government, Other
+  state                   String   @default("All India") // State name or All India
+  qualification           String   // Display text, e.g. "12th Pass", "B.Tech in CSE"
+  qualification_level     String   // 8TH, 10TH, 12TH, ITI, DIPLOMA, B.TECH/B.E, B.COM, BBA, BCA, B.SC, BA, BSW, B.PHARM, LLB, MBA, MSW, M.SC, MA, ANY GRADUATE, ANY POST GRADUATE, ENGINEERING, MEDICAL, NURSING, PHARMACY, OTHER
+  specific_discipline     String?  // CSE, Mechanical, Electrician, Civil, etc.
+  exact_qual_required     Boolean  @default(false) // If true, only this exact degree/trade is eligible
+  number_of_posts         Int
+  salary_min              Float?
+  salary_max              Float?
+  salary_text             String   // e.g. "₹19,900 – ₹63,200 (Pay Level 2)"
+  age_min                 Int?     @default(18)
+  age_max                 Int?     @default(27)
+  age_relaxation          String?  // SC/ST 5 Yrs, OBC 3 Yrs, PwD 10 Yrs
+  selection_process       String   // CBT, Written Exam, Physical Test, Typing Test, Merit List, Interview
+  application_fee_sc_st   String   @default("₹0")
+  application_fee_obc     String   @default("₹100")
+  application_fee_general String   @default("₹100")
+  application_fee_other   String?  @default("EWS: ₹100, Female: ₹0")
+  notification_date       DateTime?
+  start_date              DateTime
+  last_date               DateTime
+  exam_date               DateTime?
+  admit_card_date         DateTime?
+  result_date             DateTime?
+  official_website        String
+  official_notification_url String
+  application_url         String
+  job_description         String
+  eligibility             String
+  required_documents      String
+  how_to_apply            String?
+  status                  String   @default("PUBLISHED") // PUBLISHED, DRAFT, CLOSED, ARCHIVED
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@index([qualification_level])
+  @@index([government_field])
+  @@index([government_level])
+  @@index([state])
+  @@index([status])
+  @@index([start_date])
+  @@index([last_date])
+  @@index([slug])
+}
