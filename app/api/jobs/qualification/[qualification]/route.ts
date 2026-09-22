@@ -27,3 +27,4 @@ export async function GET(
     return NextResponse.json({ error: error.message || "Failed to fetch jobs by qualification" }, { status: 500 });
   }
 }
+

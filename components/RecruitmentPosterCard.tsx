@@ -13,7 +13,8 @@ import {
   Share2, 
   Copy, 
   Bell,
-  Download
+  Download,
+  X
 } from "lucide-react";
 import { formatDateIndian, generateGoogleCalendarUrl, generateIcsData } from "@/lib/date-utils";
 
@@ -40,9 +41,10 @@ interface PosterProps {
     application_url?: string;
     calculatedStatus?: string;
   };
+  onClose?: () => void;
 }
 
-export default function RecruitmentPosterCard({ job }: PosterProps) {
+export default function RecruitmentPosterCard({ job, onClose }: PosterProps) {
   const [copied, setCopied] = useState(false);
 
   const formattedStartDate = formatDateIndian(job.start_date);
@@ -86,9 +88,22 @@ export default function RecruitmentPosterCard({ job }: PosterProps) {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-900 bg-gradient-to-b from-[#071329] via-[#0b1c3d] to-[#040c1c] text-white font-sans transition hover:shadow-blue-900/30">
+    <div className="w-full max-w-xl mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-900 bg-gradient-to-b from-[#071329] via-[#0b1c3d] to-[#040c1c] text-white font-sans transition hover:shadow-blue-900/30 relative">
+      {/* Prominent Top-Right Card Corner Close Button */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          type="button"
+          aria-label="Close poster card"
+          title="Close (Esc)"
+          className="absolute top-3.5 right-3.5 z-50 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-600 hover:bg-red-700 text-white font-black flex items-center justify-center shadow-2xl transition transform hover:scale-110 active:scale-95 border-2 border-white cursor-pointer"
+        >
+          <X className="w-5 h-5 text-white stroke-[3]" />
+        </button>
+      )}
+
       {/* Top Banner Row */}
-      <div className="pt-4 px-5 pb-2 flex items-center justify-between border-b border-blue-900/50">
+      <div className={`pt-4 px-5 pb-2 flex items-center justify-between border-b border-blue-900/50 ${onClose ? "pr-14" : ""}`}>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Bell className="w-6 h-6 text-amber-400 fill-amber-400 animate-bounce" />
@@ -104,8 +119,10 @@ export default function RecruitmentPosterCard({ job }: PosterProps) {
           </div>
         </div>
 
-        <div className="bg-amber-400/90 text-slate-950 font-black text-[10px] md:text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow">
-          ALL GOVERNMENT ALERTS
+        <div className="flex items-center gap-2">
+          <div className="bg-amber-400/90 text-slate-950 font-black text-[10px] md:text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow">
+            ALL GOVERNMENT ALERTS
+          </div>
         </div>
       </div>
 
@@ -281,3 +298,4 @@ export default function RecruitmentPosterCard({ job }: PosterProps) {
     </div>
   );
 }
+

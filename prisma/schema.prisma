@@ -58,3 +58,24 @@ model GovernmentJob {
   @@index([last_date])
   @@index([slug])
 }
+
+model User {
+  id                   String   @id @default(cuid())
+  user_type            String   @default("Job seeker") // "Job seeker" | "Student"
+  full_name            String
+  email                String   @unique
+  password             String
+  mobile               String?
+  dob                  String
+  gender               String
+  qualification        String
+  state                String
+  city                 String
+  preferred_categories String   @default("[]") // JSON string of selected category pills
+  saved_jobs           String   @default("[]") // JSON string of saved job slugs
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  @@index([email])
+}
+

@@ -1,14 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/navigation";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Bell, Clock, Calendar, ShieldCheck, Briefcase, Menu, X } from "lucide-react";
+import { 
+  Search, 
+  Bell, 
+  Clock, 
+  Calendar, 
+  ShieldCheck, 
+  Briefcase, 
+  Menu, 
+  X,
+  User as UserIcon,
+  LogIn,
+  UserPlus
+} from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +56,13 @@ export default function Navbar() {
             <span className="sm:hidden text-slate-300">Govt Jobs Discovery Portal</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300 text-xs">
+            <a
+              href="/latest-notifications"
+              className="flex items-center gap-1 text-amber-400 hover:text-amber-300 font-bold transition"
+            >
+              <Bell className="w-3.5 h-3.5 fill-amber-400 animate-bounce" />
+              <span>Latest Notifications</span>
+            </a>
             <a
               href="/last-date-reminder"
               className="flex items-center gap-1 hover:text-amber-400 transition"
@@ -99,7 +130,7 @@ export default function Navbar() {
             </div>
           </form>
 
-          {/* Quick CTA Buttons */}
+          {/* Quick CTA Buttons & User Auth */}
           <div className="hidden lg:flex items-center gap-2">
             <a
               href="/last-date-reminder"
@@ -115,6 +146,33 @@ export default function Navbar() {
               <Calendar className="w-3.5 h-3.5 text-sky-700" />
               Upcoming Jobs
             </a>
+
+            {currentUser ? (
+              <a
+                href="/dashboard"
+                className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
+              >
+                <UserIcon className="w-3.5 h-3.5 text-indigo-600" />
+                <span>{currentUser.full_name?.split(" ")[0] || "Dashboard"}</span>
+              </a>
+            ) : (
+              <div className="flex items-center gap-1.5 pl-1 border-l border-slate-200">
+                <a
+                  href="/login"
+                  className="flex items-center gap-1 bg-[#d32f2f] hover:bg-[#b71c1c] text-white px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Log in</span>
+                </a>
+                <a
+                  href="/register"
+                  className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Register</span>
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -156,6 +214,13 @@ export default function Navbar() {
             className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5 flex items-center gap-1"
           >
             Home
+          </a>
+          <a
+            href="/latest-notifications"
+            className="px-3 py-1.5 rounded bg-amber-400 text-slate-950 font-black hover:bg-amber-300 transition mx-0.5 flex items-center gap-1.5 shadow"
+          >
+            <Bell className="w-3.5 h-3.5 fill-slate-950 animate-bounce" />
+            <span>Latest Notifications</span>
           </a>
           <a
             href="/government-jobs"
@@ -249,12 +314,46 @@ export default function Navbar() {
             Home
           </a>
           <a
+            href="/latest-notifications"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-1 text-amber-400 font-extrabold flex items-center gap-1.5"
+          >
+            <Bell className="w-4 h-4 fill-amber-400" />
+            <span>Latest Notifications 2026</span>
+          </a>
+          <a
             href="/government-jobs"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1 hover:text-blue-400"
           >
             All Government Jobs
           </a>
+          {currentUser ? (
+            <a
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1 text-indigo-400 font-bold"
+            >
+              👤 My Dashboard ({currentUser.full_name?.split(" ")[0]})
+            </a>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 py-1">
+              <a
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="bg-[#d32f2f] text-white p-2 rounded-lg text-center font-bold"
+              >
+                Log In
+              </a>
+              <a
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="bg-indigo-600 text-white p-2 rounded-lg text-center font-bold"
+              >
+                Register
+              </a>
+            </div>
+          )}
           <a
             href="/last-date-reminder"
             onClick={() => setMobileMenuOpen(false)}
@@ -318,3 +417,4 @@ export default function Navbar() {
     </header>
   );
 }
+

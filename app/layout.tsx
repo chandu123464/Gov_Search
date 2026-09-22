@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "FreeJobAlert.Com : Latest Government Jobs, Sarkari Naukri & Admit Cards 2026",
@@ -27,13 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col bg-[#f4f6f8] text-slate-900 antialiased">
-        <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-6">
-          {children}
-        </main>
-        <Footer />
+      <body className="min-h-screen bg-[#0b0f19] antialiased">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
 }
+

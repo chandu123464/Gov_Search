@@ -95,3 +95,4 @@ export default function ClosingSoonWidget({ jobs }: Props) {
     </div>
   );
 }
+

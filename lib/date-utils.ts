@@ -143,3 +143,4 @@ export function generateIcsData(job: {
     "END:VCALENDAR",
   ].join("\r\n");
 }
+

@@ -230,3 +230,4 @@ export function getPrismaQualificationFilter(selectedQual: string) {
     qualification_level: { contains: norm },
   };
 }
+

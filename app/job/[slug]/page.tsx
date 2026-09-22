@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getJobByIdOrSlug, getJobs } from "@/lib/jobs-service";
 import RecruitmentPosterCard from "@/components/RecruitmentPosterCard";
 import JobCard from "@/components/JobCard";
+import JobSyllabusSection from "@/components/JobSyllabusSection";
 import { 
   formatDateIndian, 
   getDaysRemainingText, 
@@ -26,7 +27,8 @@ import {
   AlertTriangle, 
   Share2, 
   Download,
-  Info
+  Info,
+  BookOpen
 } from "lucide-react";
 
 interface Props {
@@ -149,6 +151,17 @@ export default async function JobDetailPage({ params }: Props) {
                   {formattedLastDate}
                 </span>
               </div>
+            </div>
+
+            {/* Quick Syllabus Jump Link */}
+            <div className="pt-1">
+              <a
+                href="#syllabus-section"
+                className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg transition"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Jump to Syllabus, Topics &amp; Weightages ➔</span>
+              </a>
             </div>
           </div>
 
@@ -299,6 +312,14 @@ export default async function JobDetailPage({ params }: Props) {
             </p>
           </div>
 
+          {/* Exam Pattern & Syllabus Section */}
+          <JobSyllabusSection
+            slug={job.slug}
+            field={job.government_field}
+            postName={job.post_name}
+            officialNotificationUrl={job.official_notification_url}
+          />
+
           {/* Required Documents */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
             <h3 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
@@ -432,3 +453,4 @@ export default async function JobDetailPage({ params }: Props) {
     </div>
   );
 }
+

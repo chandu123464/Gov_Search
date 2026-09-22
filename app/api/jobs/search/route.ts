@@ -19,3 +19,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed to execute search" }, { status: 500 });
   }
 }
+

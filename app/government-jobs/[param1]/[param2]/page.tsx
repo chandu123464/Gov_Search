@@ -98,3 +98,4 @@ export default async function CombinedCategoryPage({ params, searchParams }: Pro
     </div>
   );
 }
+

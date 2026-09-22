@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Building, 
   GraduationCap, 
@@ -12,7 +12,8 @@ import {
   Eye, 
   Share2, 
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  X
 } from "lucide-react";
 import { 
   calculateJobStatus, 
@@ -29,6 +30,23 @@ interface JobCardProps {
 
 export default function JobCard({ job, onOpenReminder }: JobCardProps) {
   const [showPosterModal, setShowPosterModal] = useState(false);
+
+  // Close modal on Escape key and prevent background scroll
+  useEffect(() => {
+    if (!showPosterModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowPosterModal(false);
+      }
+    };
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [showPosterModal]);
 
   const status = job.calculatedStatus || calculateJobStatus(job.start_date, job.last_date);
   const remaining = getDaysRemainingText(job.last_date, job.start_date);
@@ -197,18 +215,29 @@ export default function JobCard({ job, onOpenReminder }: JobCardProps) {
 
       {/* Poster Preview Modal */}
       {showPosterModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-xl my-8">
-            <button
-              onClick={() => setShowPosterModal(false)}
-              className="absolute -top-3 -right-3 z-10 bg-white text-slate-900 font-black rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-slate-200"
-            >
-              ✕
-            </button>
-            <RecruitmentPosterCard job={job} />
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPosterModal(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md overflow-y-auto p-4 sm:p-6"
+        >
+          {/* Floating Screen-Corner Close Button (ALWAYS VISIBLE in top right of screen) */}
+          <button
+            onClick={() => setShowPosterModal(false)}
+            aria-label="Close poster card"
+            title="Close Poster (Esc)"
+            className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 bg-red-600 hover:bg-red-700 text-white font-black rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-2xl transition transform hover:scale-110 active:scale-95 border-2 border-white cursor-pointer"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white stroke-[3]" />
+          </button>
+
+          {/* Modal Card Container (Centered with mx-auto, NEVER cut off at top) */}
+          <div className="relative w-full max-w-xl mx-auto my-6 sm:my-10">
+            <RecruitmentPosterCard job={job} onClose={() => setShowPosterModal(false)} />
           </div>
         </div>
       )}
     </>
   );
 }
+
