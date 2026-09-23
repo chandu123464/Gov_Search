@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { usePathname } from "next/navigation";
@@ -16,7 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isFullScreenPage) {
     return (
-      <div className="min-h-screen w-full bg-[#0b0f19] text-slate-100 flex flex-col">
+      <div className="min-h-screen w-full flex flex-col">
         {children}
       </div>
     );
@@ -33,4 +33,3 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
