@@ -1,415 +1,187 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Bell, 
-  Clock, 
-  Calendar, 
-  ShieldCheck, 
-  Briefcase, 
-  Menu, 
-  X,
-  User as UserIcon,
-  LogIn,
-  UserPlus
-} from "lucide-react";
+import React, { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Search, Menu, X } from "lucide-react";
+import GovEmblem from "@/components/GovEmblem";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.authenticated) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/government-jobs?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchModalOpen(false);
+      setMobileMenuOpen(false);
     }
   };
 
-  return (
-    <header className="w-full bg-white shadow-sm sticky top-0 z-50">
-      {/* Top Notification Announcement Bar */}
-      <div className="bg-slate-900 text-white text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <span className="bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide">
-              Official Alert
-            </span>
-            <span className="hidden sm:inline text-slate-300">
-              India&apos;s leading Sarkari Naukri &amp; Govt Exam Discovery Portal
-            </span>
-            <span className="sm:hidden text-slate-300">Govt Jobs Discovery Portal</span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-300 text-xs">
-            <a
-              href="/latest-notifications"
-              className="flex items-center gap-1 text-amber-400 hover:text-amber-300 font-bold transition"
-            >
-              <Bell className="w-3.5 h-3.5 fill-amber-400 animate-bounce" />
-              <span>Latest Notifications</span>
-            </a>
-            <a
-              href="/last-date-reminder"
-              className="flex items-center gap-1 hover:text-amber-400 transition"
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span>Closing Soon Alerts</span>
-            </a>
-            <a
-              href="/upcoming-jobs"
-              className="flex items-center gap-1 hover:text-sky-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-sky-400" />
-              <span>Upcoming Jobs</span>
-            </a>
-            <a
-              href="/admin"
-              className="text-slate-400 hover:text-white transition hidden md:inline"
-            >
-              Admin Panel
-            </a>
-          </div>
-        </div>
-      </div>
+  const navLinks = [
+    { label: "Home", href: "/" },
+    { label: "Government Jobs", href: "/government-jobs" },
+    { label: "Results", href: "/results" },
+    { label: "Exam Calendar", href: "/exam-calendar" },
+    { label: "Syllabus", href: "/syllabus" },
+    { label: "Blog", href: "/blog" },
+    { label: "About", href: "/about" },
+  ];
 
-      {/* Main Header with Logo & Search */}
-      <div className="max-w-7xl mx-auto px-4 py-3.5">
+  return (
+    <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
         <div className="flex items-center justify-between gap-4">
-          {/* Logo */}
-          <a href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-500 flex items-center justify-center text-white font-black text-xl shadow-md group-hover:scale-105 transition">
-              FJA
+          {/* LEFT: Government Emblem + Brand */}
+          <a href="/" className="flex items-center gap-3 group flex-shrink-0">
+            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105">
+              <GovEmblem className="w-9 h-10 text-slate-800" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl md:text-2xl font-black tracking-tight text-blue-900">
-                  FREE<span className="text-amber-600">JOB</span>ALERT
-                </span>
-                <span className="hidden sm:inline-block bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                  .COM
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium tracking-wide">
-                Stay informed. Stay ahead.
-              </p>
+            <div className="flex flex-col">
+              <span className="text-xl sm:text-2xl font-black tracking-tight leading-none">
+                <span className="text-slate-900">Gov</span>
+                <span className="text-blue-600">Search</span>
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium tracking-wide mt-0.5">
+                Find Government Jobs. Build a Better Future.
+              </span>
             </div>
           </a>
 
-          {/* Search Bar (Desktop) */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-lg mx-4">
-            <div className="relative w-full">
+          {/* CENTER: Navigation Links (Desktop) */}
+          <nav className="hidden lg:flex items-center space-x-1 font-semibold text-sm">
+            {navLinks.map((link) => {
+              const isActive =
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
+
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-blue-50 text-blue-700 font-bold"
+                      : "text-slate-700 hover:text-blue-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </nav>
+
+          {/* RIGHT: Search, Login, Sign Up */}
+          <div className="hidden sm:flex items-center gap-2.5">
+            <button
+              onClick={() => setSearchModalOpen(!searchModalOpen)}
+              aria-label="Search jobs"
+              className="p-2 rounded-full text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            <a
+              href="/login"
+              className="px-4 py-1.5 border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded-lg text-sm font-semibold transition"
+            >
+              Login
+            </a>
+
+            <a
+              href="/register"
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow transition"
+            >
+              Sign Up
+            </a>
+          </div>
+
+          {/* Mobile Menu & Search Icon */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <button
+              onClick={() => setSearchModalOpen(!searchModalOpen)}
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Global Search Expandable Bar (If toggled) */}
+        {searchModalOpen && (
+          <form onSubmit={handleSearch} className="mt-3 pt-3 border-t border-slate-100 animate-fadeIn">
+            <div className="relative w-full max-w-2xl mx-auto">
               <input
                 type="text"
-                placeholder="Search by Post, SSC, Railway, Banking, 10th, 12th, State..."
+                autoFocus
+                placeholder="Search jobs by post name, organization, department..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-24 py-2 border-2 border-slate-200 rounded-full text-sm focus:outline-none focus:border-blue-600 transition bg-slate-50/50"
+                className="w-full pl-10 pr-24 py-2 border-2 border-blue-500 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-white"
               />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-blue-600 absolute left-3.5 top-3" />
               <button
                 type="submit"
-                className="absolute right-1.5 top-1.5 bg-blue-700 hover:bg-blue-800 text-white px-4 py-1 rounded-full text-xs font-semibold shadow transition"
+                className="absolute right-1.5 top-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-lg text-xs font-bold transition shadow-sm"
               >
                 Search
               </button>
             </div>
           </form>
-
-          {/* Quick CTA Buttons & User Auth */}
-          <div className="hidden lg:flex items-center gap-2">
-            <a
-              href="/last-date-reminder"
-              className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
-              Last Date Reminder
-            </a>
-            <a
-              href="/upcoming-jobs"
-              className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-            >
-              <Calendar className="w-3.5 h-3.5 text-sky-700" />
-              Upcoming Jobs
-            </a>
-
-            {currentUser ? (
-              <a
-                href="/dashboard"
-                className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-              >
-                <UserIcon className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{currentUser.full_name?.split(" ")[0] || "Dashboard"}</span>
-              </a>
-            ) : (
-              <div className="flex items-center gap-1.5 pl-1 border-l border-slate-200">
-                <a
-                  href="/login"
-                  className="flex items-center gap-1 bg-[#d32f2f] hover:bg-[#b71c1c] text-white px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Log in</span>
-                </a>
-                <a
-                  href="/register"
-                  className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Register</span>
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md text-slate-700 hover:bg-slate-100"
-            aria-label="Toggle Navigation"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Search Bar */}
-        <form onSubmit={handleSearch} className="mt-3 md:hidden">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Search by SSC, Railway, 10th, 12th..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-20 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-600"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <button
-              type="submit"
-              className="absolute right-1 top-1 bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-semibold"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        )}
       </div>
 
-      {/* FreeJobAlert Classic Blue Navigation Bar */}
-      <nav className="bg-[#0366d6] text-white border-t border-blue-700">
-        <div className="max-w-7xl mx-auto px-2 flex items-center overflow-x-auto whitespace-nowrap text-xs font-semibold scrollbar-none py-1">
-          <a
-            href="/"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5 flex items-center gap-1"
-          >
-            Home
-          </a>
-          <a
-            href="/latest-notifications"
-            className="px-3 py-1.5 rounded bg-amber-400 text-slate-950 font-black hover:bg-amber-300 transition mx-0.5 flex items-center gap-1.5 shadow"
-          >
-            <Bell className="w-3.5 h-3.5 fill-slate-950 animate-bounce" />
-            <span>Latest Notifications</span>
-          </a>
-          <a
-            href="/government-jobs"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            All Govt Jobs
-          </a>
-          <a
-            href="/government-jobs/10th"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            10th Pass
-          </a>
-          <a
-            href="/government-jobs/12th"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            12th Pass
-          </a>
-          <a
-            href="/government-jobs/graduate"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Graduate Jobs
-          </a>
-          <a
-            href="/government-jobs/railway"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Railway
-          </a>
-          <a
-            href="/government-jobs/ssc"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            SSC
-          </a>
-          <a
-            href="/government-jobs/banking"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Banking
-          </a>
-          <a
-            href="/government-jobs/police"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Police &amp; Defence
-          </a>
-          <a
-            href="/government-jobs/engineering"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Engineering
-          </a>
-          <a
-            href="/government-jobs/teaching"
-            className="px-3 py-1.5 rounded hover:bg-blue-800 transition mx-0.5"
-          >
-            Teaching
-          </a>
-          <a
-            href="/last-date-reminder"
-            className="px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition mx-1"
-          >
-            Last Date Reminder
-          </a>
-          <a
-            href="/upcoming-jobs"
-            className="px-3 py-1.5 rounded bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition mx-0.5"
-          >
-            Upcoming
-          </a>
-          <a
-            href="/admin"
-            className="px-3 py-1.5 rounded bg-blue-900 text-blue-100 hover:bg-blue-950 transition mx-0.5 ml-auto"
-          >
-            Admin
-          </a>
-        </div>
-      </nav>
-
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 text-white p-4 space-y-3 border-t border-slate-800 text-sm">
-          <a
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-1 hover:text-blue-400"
-          >
-            Home
-          </a>
-          <a
-            href="/latest-notifications"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-1 text-amber-400 font-extrabold flex items-center gap-1.5"
-          >
-            <Bell className="w-4 h-4 fill-amber-400" />
-            <span>Latest Notifications 2026</span>
-          </a>
-          <a
-            href="/government-jobs"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-1 hover:text-blue-400"
-          >
-            All Government Jobs
-          </a>
-          {currentUser ? (
-            <a
-              href="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1 text-indigo-400 font-bold"
-            >
-              👤 My Dashboard ({currentUser.full_name?.split(" ")[0]})
-            </a>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 py-1">
+        <div className="lg:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 shadow-lg animate-fadeIn">
+          {navLinks.map((link) => {
+            const isActive =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+
+            return (
               <a
-                href="/login"
+                key={link.label}
+                href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="bg-[#d32f2f] text-white p-2 rounded-lg text-center font-bold"
+                className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700 font-bold"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`}
               >
-                Log In
+                {link.label}
               </a>
-              <a
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="bg-indigo-600 text-white p-2 rounded-lg text-center font-bold"
-              >
-                Register
-              </a>
-            </div>
-          )}
-          <a
-            href="/last-date-reminder"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-1 text-amber-400 font-bold"
-          >
-            ⏰ Last Date Reminder
-          </a>
-          <a
-            href="/upcoming-jobs"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-1 text-sky-400 font-bold"
-          >
-            🚀 Upcoming Jobs
-          </a>
-          <div className="border-t border-slate-800 pt-2 grid grid-cols-2 gap-2 text-xs">
+            );
+          })}
+
+          <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
             <a
-              href="/government-jobs/10th"
+              href="/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="bg-slate-800 p-2 rounded text-center"
+              className="flex-1 text-center py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50"
             >
-              10th Pass
+              Login
             </a>
             <a
-              href="/government-jobs/12th"
+              href="/register"
               onClick={() => setMobileMenuOpen(false)}
-              className="bg-slate-800 p-2 rounded text-center"
+              className="flex-1 text-center py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
             >
-              12th Pass
-            </a>
-            <a
-              href="/government-jobs/ssc"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-slate-800 p-2 rounded text-center"
-            >
-              SSC Jobs
-            </a>
-            <a
-              href="/government-jobs/railway"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-slate-800 p-2 rounded text-center"
-            >
-              Railway Jobs
-            </a>
-            <a
-              href="/government-jobs/banking"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-slate-800 p-2 rounded text-center"
-            >
-              Banking Jobs
-            </a>
-            <a
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-blue-800 p-2 rounded text-center font-bold"
-            >
-              Admin Panel
+              Sign Up
             </a>
           </div>
         </div>
@@ -417,4 +189,3 @@ export default function Navbar() {
     </header>
   );
 }
-

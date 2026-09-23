@@ -57,7 +57,7 @@ export default function LoginPage() {
   };
 
   const handleDemoFill = () => {
-    setEmail("aspirant.demo@freejobalert.com");
+    setEmail("aspirant.demo@govsearch.in");
     setPassword("Pass@2026");
   };
 
@@ -175,7 +175,7 @@ export default function LoginPage() {
 
         {/* Footer Link to Register */}
         <div className="text-center pt-2 border-t border-slate-800 text-xs sm:text-sm text-slate-400">
-          New to FreeJobAlert?{" "}
+          New to GovSearch?{" "}
           <Link href="/register" className="text-indigo-400 font-bold hover:underline ml-1">
             Create an account
           </Link>

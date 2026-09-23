@@ -75,15 +75,19 @@ export function getDaysRemainingText(lastDate: string | Date, startDate?: string
 }
 
 export function formatDateIndian(dateInput: string | Date | null | undefined): string {
-  if (!dateInput) return "N/A";
+  if (!dateInput) return "To be announced";
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "N/A";
+  if (isNaN(date.getTime())) return "To be announced";
 
   const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+  const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
 
-  return `${day}/${month}/${year}`;
+  return `${day} ${month} ${year}`;
 }
 
 export function generateGoogleCalendarUrl(job: {

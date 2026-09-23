@@ -17,6 +17,12 @@ async function testEndpoints() {
     { url: "/api/jobs/qualification/12TH", name: "API: Qualification 12TH" },
     { url: "/api/jobs/field/Railway", name: "API: Field Railway" },
     { url: "/api/jobs/government-level/Central%20Government", name: "API: Level Central Gov" },
+    { url: "/results", name: "Results Page" },
+    { url: "/exam-calendar", name: "Exam Calendar Page" },
+    { url: "/syllabus", name: "Syllabus Page" },
+    { url: "/blog", name: "Blog Page" },
+    { url: "/about", name: "About Page" },
+    { url: "/api/jobs/filter?qualification=12th&field=SSC&government_level=Central%20Government", name: "API: 4-Step Filter" },
   ];
 
   let passed = 0;

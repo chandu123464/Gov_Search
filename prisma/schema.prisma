@@ -18,6 +18,7 @@ model GovernmentJob {
   state                   String   @default("All India") // State name or All India
   qualification           String   // Display text, e.g. "12th Pass", "B.Tech in CSE"
   qualification_level     String   // 8TH, 10TH, 12TH, ITI, DIPLOMA, B.TECH/B.E, B.COM, BBA, BCA, B.SC, BA, BSW, B.PHARM, LLB, MBA, MSW, M.SC, MA, ANY GRADUATE, ANY POST GRADUATE, ENGINEERING, MEDICAL, NURSING, PHARMACY, OTHER
+  qualification_details   String?
   specific_discipline     String?  // CSE, Mechanical, Electrician, Civil, etc.
   exact_qual_required     Boolean  @default(false) // If true, only this exact degree/trade is eligible
   number_of_posts         Int
@@ -31,6 +32,9 @@ model GovernmentJob {
   application_fee_sc_st   String   @default("₹0")
   application_fee_obc     String   @default("₹100")
   application_fee_general String   @default("₹100")
+  application_fee_ews     String?  @default("₹100")
+  application_fee_female  String?  @default("₹0")
+  application_fee_pwd     String?  @default("₹0")
   application_fee_other   String?  @default("EWS: ₹100, Female: ₹0")
   notification_date       DateTime?
   start_date              DateTime
@@ -46,12 +50,16 @@ model GovernmentJob {
   required_documents      String
   how_to_apply            String?
   status                  String   @default("PUBLISHED") // PUBLISHED, DRAFT, CLOSED, ARCHIVED
+  is_published            Boolean  @default(true)
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
 
+  @@index([qualification])
   @@index([qualification_level])
   @@index([government_field])
   @@index([government_level])
+  @@index([organization_name])
+  @@index([department])
   @@index([state])
   @@index([status])
   @@index([start_date])

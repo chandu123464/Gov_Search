@@ -38,7 +38,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await getJobByIdOrSlug(params.slug);
   if (!job) {
-    return { title: "Job Notification Not Found | FreeJobAlert.Com" };
+    return { title: "Job Notification Not Found | GovSearch" };
   }
 
   const lastDateFormatted = formatDateIndian(job.last_date);
@@ -237,22 +237,30 @@ export default async function JobDetailPage({ params }: Props) {
               <span>Category-Wise Application Fee</span>
             </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
                 <span className="text-slate-500 block text-[10px] uppercase font-bold">General</span>
-                <span className="text-base font-black text-slate-900">{job.application_fee_general}</span>
+                <span className="text-sm font-black text-slate-900">{job.application_fee_general}</span>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">OBC Category</span>
-                <span className="text-base font-black text-slate-900">{job.application_fee_obc}</span>
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">OBC</span>
+                <span className="text-sm font-black text-slate-900">{job.application_fee_obc}</span>
               </div>
-              <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
-                <span className="text-emerald-700 block text-[10px] uppercase font-bold">SC / ST / PwD</span>
-                <span className="text-base font-black text-emerald-800">{job.application_fee_sc_st}</span>
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">EWS</span>
+                <span className="text-sm font-black text-slate-900">{job.application_fee_ews || "₹100"}</span>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Female / Other</span>
-                <span className="text-xs font-black text-slate-900">{job.application_fee_other || "As per rules"}</span>
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                <span className="text-emerald-700 block text-[10px] uppercase font-bold">SC / ST</span>
+                <span className="text-sm font-black text-emerald-800">{job.application_fee_sc_st}</span>
+              </div>
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                <span className="text-emerald-700 block text-[10px] uppercase font-bold">Female</span>
+                <span className="text-sm font-black text-emerald-800">{job.application_fee_female || "₹0"}</span>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">PwD</span>
+                <span className="text-sm font-black text-slate-900">{job.application_fee_pwd || "₹0"}</span>
               </div>
             </div>
             <p className="text-[11px] text-slate-500 italic">

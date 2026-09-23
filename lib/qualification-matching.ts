@@ -144,13 +144,24 @@ export function isUserEligibleForJob(
   return false;
 }
 
+export function normalizeQualification(input: string): string {
+  const raw = input.trim().toUpperCase().replace(/PASS$/, "").trim();
+  if (raw === "10" || raw === "10TH" || raw === "MATRICULATION" || raw === "SSC") return "10TH";
+  if (raw === "12" || raw === "12TH" || raw === "INTERMEDIATE" || raw === "HSC" || raw === "10+2") return "12TH";
+  if (raw === "8" || raw === "8TH") return "8TH";
+  if (raw === "GRADUATE" || raw === "ANY GRADUATE" || raw === "DEGREE") return "ANY GRADUATE";
+  if (raw === "POST GRADUATE" || raw === "ANY POST GRADUATE" || raw === "PG") return "ANY POST GRADUATE";
+  if (raw === "BTECH" || raw === "B.TECH" || raw === "BE" || raw === "B.E" || raw === "B.TECH/B.E") return "B.TECH/B.E";
+  return raw;
+}
+
 /**
  * Builds the database Prisma query condition for qualification filtering.
  * When the user selects a qualification tab/filter:
  * e.g., "12TH" -> fetches jobs that are targeted at 12th or accept 12th candidates.
  */
 export function getPrismaQualificationFilter(selectedQual: string) {
-  const norm = selectedQual.trim().toUpperCase();
+  const norm = normalizeQualification(selectedQual);
 
   // If user selected "ANY GRADUATE" or "GRADUATE"
   if (norm === "ANY GRADUATE" || norm === "GRADUATE") {

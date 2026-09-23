@@ -11,16 +11,30 @@ export async function getJobs(params: JobFilterParams) {
 
   const whereConditions: Prisma.GovernmentJobWhereInput[] = [
     { status: { in: ["PUBLISHED", "OPEN"] } },
+    {
+      OR: [
+        { status: { in: ["PUBLISHED", "OPEN"] } },
+        { is_published: true },
+      ],
+    },
   ];
 
   // 1. Qualification Filter with intelligent hierarchy
-  if (params.qualification && params.qualification.trim()) {
+  if (
+    params.qualification &&
+    params.qualification.trim() &&
+    !params.qualification.toLowerCase().startsWith("all")
+  ) {
     const qualFilter = getPrismaQualificationFilter(params.qualification);
     whereConditions.push(qualFilter as Prisma.GovernmentJobWhereInput);
   }
 
   // 2. Government Field Filter
-  if (params.field && params.field.trim()) {
+  if (
+    params.field &&
+    params.field.trim() &&
+    !params.field.toLowerCase().startsWith("all")
+  ) {
     const fieldTerm = params.field.trim();
     whereConditions.push({
       government_field: { equals: fieldTerm },
@@ -28,7 +42,11 @@ export async function getJobs(params: JobFilterParams) {
   }
 
   // 3. Government Level Filter
-  if (params.government_level && params.government_level.trim()) {
+  if (
+    params.government_level &&
+    params.government_level.trim() &&
+    !params.government_level.toLowerCase().startsWith("all")
+  ) {
     const levelTerm = params.government_level.trim();
     whereConditions.push({
       government_level: { contains: levelTerm },
@@ -36,7 +54,11 @@ export async function getJobs(params: JobFilterParams) {
   }
 
   // 4. State Filter
-  if (params.state && params.state.trim() && params.state !== "All India") {
+  if (
+    params.state &&
+    params.state.trim() &&
+    !params.state.toLowerCase().startsWith("all")
+  ) {
     whereConditions.push({
       OR: [
         { state: { contains: params.state.trim() } },

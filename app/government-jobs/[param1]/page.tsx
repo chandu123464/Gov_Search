@@ -67,7 +67,7 @@ function resolveParam(raw: string): { qualification?: string; field?: string; ti
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolved = resolveParam(params.param1);
   return {
-    title: `${resolved.title} | FreeJobAlert.Com`,
+    title: `${resolved.title} | GovSearch`,
     description: `Latest notifications, vacancy details, eligibility, syllabus, and online application links for ${resolved.title}.`,
   };
 }

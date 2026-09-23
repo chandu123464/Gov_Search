@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p1 = decodeURIComponent(params.param1).toUpperCase();
   const p2 = decodeURIComponent(params.param2).toUpperCase();
   return {
-    title: `${p1} ${p2} Government Jobs 2026 | FreeJobAlert.Com`,
+    title: `${p1} ${p2} Government Jobs 2026 | GovSearch`,
     description: `Find all latest ${p1} pass ${p2} recruitment notifications, eligibility, and apply online links.`,
   };
 }

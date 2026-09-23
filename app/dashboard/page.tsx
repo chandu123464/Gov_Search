@@ -411,7 +411,7 @@ export default function DashboardPage() {
 
       {/* Full-Screen Dashboard Footer */}
       <footer className="w-full bg-[#0a0e17] border-t border-slate-800/80 py-4 px-4 sm:px-8 mt-auto text-center text-xs text-slate-500">
-        <p>FreeJobAlert Candidate Portal • Verified Official Government Exam &amp; Job Notifications</p>
+        <p>GovSearch Candidate Portal • Verified Official Government Exam &amp; Job Notifications</p>
       </footer>
     </div>
   );
