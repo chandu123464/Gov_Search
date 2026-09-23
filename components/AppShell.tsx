@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { usePathname } from "next/navigation";
@@ -8,13 +8,17 @@ import Footer from "@/components/Footer";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
-  // Dashboard, Login, and Register pages get a 100% full-screen layout without constricting margins
-  const isFullScreenPage = 
-    pathname === "/dashboard" || 
-    pathname === "/login" || 
-    pathname === "/register";
+  // Login and Register pages get a 100% locked full-screen viewport without up/down scrolling
+  if (pathname === "/login" || pathname === "/register") {
+    return (
+      <div className="fixed inset-0 h-screen w-screen max-h-screen max-w-full overflow-hidden flex flex-col bg-[#e8f4fd]">
+        {children}
+      </div>
+    );
+  }
 
-  if (isFullScreenPage) {
+  // Dashboard page gets a full-width layout with standard vertical scrolling
+  if (pathname === "/dashboard") {
     return (
       <div className="min-h-screen w-full flex flex-col">
         {children}

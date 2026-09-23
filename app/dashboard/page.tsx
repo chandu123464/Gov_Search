@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import {
   Briefcase, 
   GraduationCap, 
   MapPin, 
-  Mail,
+  Mail, 
   Bell, 
   LogOut, 
   Bookmark, 
@@ -23,7 +23,11 @@ import {
   Coins,
   UserCheck,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  BookOpen,
+  FileText,
+  Download,
+  Eye
 } from "lucide-react";
 import EmblemLogo from "@/components/EmblemLogo";
 import GovEmblem from "@/components/GovEmblem";
@@ -34,6 +38,7 @@ import {
   getDaysRemainingText, 
   generateGoogleCalendarUrl 
 } from "@/lib/date-utils";
+import { STUDY_MATERIALS, StudyMaterial } from "@/lib/study-materials";
 
 interface UserProfile {
   id: string;
@@ -53,8 +58,10 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved">("matching");
+  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes">("matching");
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
+  const [studyModuleFilter, setStudyModuleFilter] = useState<"All" | "Arithmetic" | "Advanced Maths" | "Reasoning">("All");
+  const [activePdfViewer, setActivePdfViewer] = useState<StudyMaterial | null>(null);
   const [dashboardSearch, setDashboardSearch] = useState("");
   const [activePosterJob, setActivePosterJob] = useState<any | null>(null);
 
@@ -65,7 +72,6 @@ export default function DashboardPage() {
       if (stored) {
         setUser(JSON.parse(stored));
       } else {
-        // Default candidate profile matching user identity & screenshot
         const demoUser: UserProfile = {
           id: "demo-cand-01",
           user_type: "Job seeker",
@@ -129,6 +135,29 @@ export default function DashboardPage() {
     ["Banking", "SSC", "Railways", "UPSC", "Defence", "Teaching", "Police", "PSU", "Govt Engineering"].forEach((c) => set.add(c));
     return Array.from(set).sort();
   }, [jobs]);
+
+  // Filter study materials based on module and search
+  const filteredStudyMaterials = useMemo(() => {
+    let list = [...STUDY_MATERIALS];
+
+    if (studyModuleFilter !== "All") {
+      list = list.filter((m) => m.module === studyModuleFilter);
+    }
+
+    if (dashboardSearch.trim()) {
+      const q = dashboardSearch.toLowerCase();
+      list = list.filter(
+        (m) =>
+          m.title.toLowerCase().includes(q) ||
+          m.topic.toLowerCase().includes(q) ||
+          m.module.toLowerCase().includes(q) ||
+          m.description.toLowerCase().includes(q) ||
+          m.recommendedFor.some((rec) => rec.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [studyModuleFilter, dashboardSearch]);
 
   // Filter jobs based on active tab, category dropdown, and search text
   const filteredJobs = useMemo(() => {
@@ -195,8 +224,9 @@ export default function DashboardPage() {
       const userCats = (user.preferred_categories || []).map((c) => c.toLowerCase());
       return userCats.some((cat) => j.government_field?.toLowerCase().includes(cat));
     }).length;
+    const studyNotesCount = STUDY_MATERIALS.length;
 
-    return { total, closingSoonCount, savedCount, matchedCount };
+    return { total, closingSoonCount, savedCount, matchedCount, studyNotesCount };
   }, [jobs, user]);
 
   return (
@@ -215,21 +245,20 @@ export default function DashboardPage() {
                   <span className="text-lg font-black text-slate-900 tracking-tight">
                     Gov<span className="text-blue-600">Search</span>
                   </span>
-                  <span className="bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-md uppercase hidden sm:inline-block">
-                    CANDIDATE DASHBOARD
+                  <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-blue-200 hidden sm:inline-block">
+                    Candidate Portal
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-medium">Verified Government Jobs Hub</span>
               </div>
             </Link>
           </div>
 
-          {/* Center: Search across dashboard jobs */}
+          {/* Center: Search across dashboard jobs & notes */}
           <div className="relative flex-1 max-w-md mx-2 hidden md:block">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
             <input
               type="text"
-              placeholder="Search your vacancies by post, department, keyword..."
+              placeholder={activeTab === "study_notes" ? "Search study notes by topic, algebra, reasoning..." : "Search vacancies by post, department, keyword..."}
               value={dashboardSearch}
               onChange={(e) => setDashboardSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition"
@@ -250,28 +279,30 @@ export default function DashboardPage() {
               href="/latest-notifications"
               className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded-xl text-xs border border-blue-200 transition"
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">Notifications</span>
             </Link>
 
-            {user && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200">
-                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs">
-                  {user.full_name?.charAt(0).toUpperCase() || "K"}
-                </div>
-                <div className="hidden sm:block text-left text-xs leading-tight">
-                  <span className="font-extrabold text-slate-900 block max-w-[120px] truncate">
-                    {user.full_name}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium">{user.qualification}</span>
-                </div>
+            <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                {user?.full_name?.charAt(0) || "U"}
               </div>
-            )}
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-xs font-bold text-slate-900 truncate max-w-[130px]">
+                  {user?.full_name || "Candidate"}
+                </span>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {user?.qualification || "Registered"}
+                </span>
+              </div>
+            </div>
 
             <button
               onClick={handleLogout}
-              className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
-              title="Logout"
+              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition"
+              title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -331,31 +362,37 @@ export default function DashboardPage() {
               </div>
 
               {/* Statistics Overview Cards matching screenshot */}
-              <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-                <div className="bg-blue-50/70 border border-blue-100/90 rounded-2xl p-4 text-center min-w-[100px] shadow-2xs">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-shrink-0">
+                <div className="bg-blue-50/70 border border-blue-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
                     MATCHED JOBS
                   </span>
-                  <span className="text-3xl font-black text-blue-600 block">{stats.matchedCount}</span>
+                  <span className="text-2xl font-black text-blue-600 block">{stats.matchedCount}</span>
                 </div>
-                <div className="bg-red-50/70 border border-red-100/90 rounded-2xl p-4 text-center min-w-[100px] shadow-2xs">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-1">
+                <div className="bg-red-50/70 border border-red-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
                     CLOSING SOON
                   </span>
-                  <span className="text-3xl font-black text-red-600 block">{stats.closingSoonCount}</span>
+                  <span className="text-2xl font-black text-red-600 block">{stats.closingSoonCount}</span>
                 </div>
-                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-2xl p-4 text-center min-w-[100px] shadow-2xs">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-1">
+                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
                     TOTAL ACTIVE
                   </span>
-                  <span className="text-3xl font-black text-emerald-600 block">{stats.total}</span>
+                  <span className="text-2xl font-black text-emerald-600 block">{stats.total}</span>
+                </div>
+                <div className="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                  <span className="text-[10px] font-black text-indigo-700 uppercase tracking-wider block mb-1">
+                    STUDY NOTES
+                  </span>
+                  <span className="text-2xl font-black text-indigo-600 block">{stats.studyNotesCount}</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab Navigation & Controls with CATEGORY SECTION */}
+        {/* Tab Navigation & Controls with CATEGORY / MODULE SECTION */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-b border-slate-200 pb-3">
           {/* Horizontal Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -406,35 +443,213 @@ export default function DashboardPage() {
               <Bookmark className="w-3.5 h-3.5" />
               <span>Saved Jobs ({stats.savedCount})</span>
             </button>
+
+            {/* OPTION A: Study Notes Tab */}
+            <button
+              onClick={() => setActiveTab("study_notes")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+                activeTab === "study_notes"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-indigo-50/80 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Study Notes ({stats.studyNotesCount})</span>
+            </button>
           </div>
 
-          {/* Right: CATEGORY Section Dropdown matching user uploaded image */}
-          <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
-            <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
-              CATEGORY:
-            </span>
-            <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs appearance-none cursor-pointer min-w-[150px]"
-              >
-                <option value="All Categories">All Categories</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
+          {/* Right Selector: Changes between Category (for jobs) and Module (for study notes) */}
+          {activeTab === "study_notes" ? (
+            <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
+              <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">
+                MODULE:
+              </span>
+              <div className="relative">
+                <select
+                  value={studyModuleFilter}
+                  onChange={(e) => setStudyModuleFilter(e.target.value as any)}
+                  className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm font-bold text-indigo-900 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition shadow-2xs appearance-none cursor-pointer min-w-[160px]"
+                >
+                  <option value="All">All Modules (17)</option>
+                  <option value="Arithmetic">Arithmetic (12)</option>
+                  <option value="Advanced Maths">Advanced Maths (4)</option>
+                  <option value="Reasoning">Reasoning (1)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
+              <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
+                CATEGORY:
+              </span>
+              <div className="relative">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs appearance-none cursor-pointer min-w-[150px]"
+                >
+                  <option value="All Categories">All Categories</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ============================================================== */}
-        {/* FULL WIDTH HORIZONTAL JOB CARDS LIST — USER REQUESTED PATTERN */}
+        {/* TAB CONTENT: STUDY NOTES OR FULL-WIDTH HORIZONTAL JOB CARDS */}
         {/* ============================================================== */}
-        {loading ? (
+        {activeTab === "study_notes" ? (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Study Material Intro Banner */}
+            <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/50 to-white rounded-3xl p-5 sm:p-6 border border-indigo-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-indigo-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
+                    CANDIDATE STUDY HUB
+                  </span>
+                  <span className="text-xs font-bold text-indigo-900">
+                    Strictly After-Login Verified Preparation Materials
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-1.5">
+                  17 Handwritten Maths, Aptitude &amp; Reasoning Booklets
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+                  Prepared for SSC CGL/CHSL, Railway RRB, Banking, UPSC CSAT, Defence and State PSCs.
+                </p>
+              </div>
+
+              {/* Quick Module Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(["All", "Arithmetic", "Advanced Maths", "Reasoning"] as const).map((mod) => (
+                  <button
+                    key={mod}
+                    type="button"
+                    onClick={() => setStudyModuleFilter(mod)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                      studyModuleFilter === mod
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+                    }`}
+                  >
+                    {mod}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Study Material Cards List */}
+            {filteredStudyMaterials.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center space-y-3">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <BookOpen className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No study notes found</h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">
+                  No notes matched your search term. Try clearing the search bar or choosing &quot;All Modules&quot;.
+                </p>
+                <button
+                  onClick={() => {
+                    setStudyModuleFilter("All");
+                    setDashboardSearch("");
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition"
+                >
+                  Reset Module Filter
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredStudyMaterials.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all duration-200 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative group"
+                  >
+                    {/* Left Column: Icon + Information */}
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className="w-13 h-13 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-105 transition">
+                        <FileText className="w-6 h-6" />
+                      </div>
+
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        {/* Module Badge & File Size */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
+                            item.module === "Arithmetic"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : item.module === "Advanced Maths"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          }`}>
+                            {item.module}
+                          </span>
+                          <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            {item.sizeText}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified PDF
+                          </span>
+                        </div>
+
+                        {/* Note Title */}
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-indigo-600 transition block leading-snug">
+                          {item.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-xs sm:text-sm text-slate-600 line-clamp-2">
+                          {item.description}
+                        </p>
+
+                        {/* Recommended For Badges */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
+                          <span className="text-slate-400 text-[11px] font-medium mr-1">Target Exams:</span>
+                          {item.recommendedFor.map((rec) => (
+                            <span
+                              key={rec}
+                              className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]"
+                            >
+                              {rec}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Actions */}
+                    <div className="flex sm:flex-row lg:flex-col items-center justify-between lg:justify-center gap-2.5 pt-3 lg:pt-0 lg:pl-6 border-t lg:border-t-0 lg:border-l border-slate-100 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setActivePdfViewer(item)}
+                        className="w-full sm:w-auto lg:w-44 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 text-center cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Read Online</span>
+                      </button>
+
+                      <a
+                        href={`/api/study-material/${item.id}?candidate=true&download=true`}
+                        download
+                        className="w-full sm:w-auto lg:w-44 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 text-center border border-slate-200"
+                      >
+                        <Download className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Download PDF</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((n) => (
               <div
@@ -650,6 +865,58 @@ export default function DashboardPage() {
               ✕
             </button>
             <RecruitmentPosterCard job={activePosterJob} />
+          </div>
+        </div>
+      )}
+
+      {/* In-App PDF Reader Modal */}
+      {activePdfViewer && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-5xl h-[92vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between gap-4 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-indigo-600 rounded-xl text-white flex-shrink-0">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-bold text-white truncate">
+                    {activePdfViewer.title}
+                  </h3>
+                  <span className="text-xs text-slate-400 block">
+                    {activePdfViewer.module} • {activePdfViewer.sizeText} • Candidate Study Portal
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href={`/api/study-material/${activePdfViewer.id}?candidate=true&download=true`}
+                  download
+                  className="hidden sm:flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </a>
+
+                <button
+                  onClick={() => setActivePdfViewer(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition cursor-pointer"
+                  title="Close Viewer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded PDF iframe */}
+            <div className="flex-1 w-full bg-slate-800 relative">
+              <iframe
+                src={`/api/study-material/${activePdfViewer.id}?candidate=true#toolbar=1`}
+                className="w-full h-full border-none"
+                title={activePdfViewer.title}
+              />
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -10,8 +10,7 @@ import {
   EyeOff, 
   AlertCircle, 
   Loader2, 
-  ArrowRight,
-  ShieldCheck
+  ArrowRight
 } from "lucide-react";
 
 function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -121,19 +120,23 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="min-h-screen w-full bg-cover bg-center flex flex-col justify-between relative selection:bg-blue-500 selection:text-white"
+      className="h-screen w-screen max-h-screen max-w-full overflow-hidden bg-cover bg-center flex flex-col justify-between relative selection:bg-blue-600 selection:text-white"
       style={{
         backgroundImage: "url('/images/LoginBackGround.png')",
         backgroundColor: "#e8f4fd",
       }}
     >
-      {/* Top Header Row with Sign Up Link */}
-      <header className="w-full px-6 sm:px-12 py-5 flex items-center justify-between z-20">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="text-transparent select-none">GovSearch Home</div>
+      {/* Top Header Row with Invisible Logo Clicker & Top-Right Sign Up Link */}
+      <header className="w-full px-6 sm:px-12 pt-3 sm:pt-4 flex items-center justify-between z-20 flex-shrink-0">
+        <Link 
+          href="/" 
+          className="w-48 h-12 block cursor-pointer"
+          title="GovSearch Homepage"
+        >
+          <span className="sr-only">GovSearch Home</span>
         </Link>
 
-        <div className="text-sm font-semibold text-slate-700 bg-white/70 backdrop-blur-md px-4 py-2 rounded-full border border-white/60 shadow-xs">
+        <div className="text-xs sm:text-sm font-medium text-slate-700 select-none">
           New to GovSearch?{" "}
           <Link href="/register" className="text-blue-600 hover:text-blue-700 font-bold hover:underline ml-1">
             Sign Up
@@ -141,52 +144,52 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 sm:py-6 flex-1 flex items-center justify-center lg:justify-end z-10">
-        {/* Floating White Login Card */}
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-9 space-y-5 animate-in fade-in zoom-in-95 duration-300">
+      {/* Main Content Area: Fits Exact Viewport Without Up/Down Scrolling */}
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 flex-1 flex items-center justify-center lg:justify-end z-10 min-h-0 py-1">
+        {/* Floating White Login Card Matching Reference Exactly */}
+        <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl border border-slate-100/80 p-5 sm:p-7 space-y-3.5 animate-in fade-in zoom-in-95 duration-200">
           {/* Title Header */}
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="space-y-0.5">
+            <h1 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
               Welcome Back
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 font-normal">
               Login to your GovSearch account
             </p>
           </div>
 
           {/* Error Alert */}
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl flex items-center gap-2">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-2.5 rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-2.5">
             {/* Email Address */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-slate-800">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <input
                   type="email"
                   required
                   placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
+                  className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
                 />
               </div>
             </div>
 
             {/* Password */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700">
+                <label className="text-xs font-bold text-slate-800">
                   Password
                 </label>
                 <button
@@ -199,19 +202,20 @@ export default function LoginPage() {
               </div>
 
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
+                  className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -236,7 +240,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+              className="w-full bg-[#0066FF] hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-1"
             >
               {loading ? (
                 <>
@@ -253,19 +257,19 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative flex items-center justify-center pt-1">
+          <div className="relative flex items-center justify-center my-1.5">
             <div className="border-t border-slate-200 w-full" />
-            <span className="bg-white px-3 text-[11px] font-bold text-slate-400 tracking-wider uppercase absolute">
+            <span className="bg-white px-2.5 text-[10px] font-bold text-slate-400 tracking-wider uppercase absolute">
               OR
             </span>
           </div>
 
           {/* Social Logins */}
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2">
             <button
               type="button"
               onClick={() => handleSocialLogin("Google")}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition shadow-2xs"
+              className="w-full flex items-center justify-center gap-2.5 py-2 px-4 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition shadow-2xs cursor-pointer"
             >
               <GoogleIcon className="w-4 h-4" />
               <span>Continue with Google</span>
@@ -274,7 +278,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleSocialLogin("Microsoft")}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition shadow-2xs"
+              className="w-full flex items-center justify-center gap-2.5 py-2 px-4 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition shadow-2xs cursor-pointer"
             >
               <MicrosoftIcon className="w-4 h-4" />
               <span>Continue with Microsoft</span>
@@ -282,7 +286,7 @@ export default function LoginPage() {
           </div>
 
           {/* Terms & Privacy */}
-          <p className="text-[11px] text-center text-slate-500 font-medium pt-1">
+          <p className="text-[11px] text-center text-slate-500 font-normal leading-tight pt-0.5">
             By continuing, you agree to our{" "}
             <Link href="/terms" className="text-blue-600 hover:underline">
               Terms of Service
@@ -295,13 +299,13 @@ export default function LoginPage() {
           </p>
 
           {/* Data Secure Notice Callout Box */}
-          <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3 flex items-start gap-3">
-            <div className="p-1.5 bg-blue-600 text-white rounded-lg flex-shrink-0 mt-0.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
+          <div className="bg-[#f0f7ff] border border-blue-100 rounded-2xl p-2.5 flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+              <Lock className="w-3.5 h-3.5" />
             </div>
             <div className="text-[11px] leading-tight">
               <span className="font-bold text-slate-800 block">Your data is secure with us.</span>
-              <span className="text-slate-500 mt-0.5 block">
+              <span className="text-slate-500 mt-0.5 block text-[10px]">
                 We follow industry best practices to protect your information.
               </span>
             </div>
@@ -309,10 +313,8 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Subtle invisible footer placeholder so the background's built-in footer remains clearly visible */}
-      <footer className="w-full py-4 px-6 pointer-events-none opacity-0 select-none">
-        GovSearch Footer Spacer
-      </footer>
+      {/* Fixed bottom spacer reserving space for the background's built-in footer row */}
+      <footer className="w-full h-8 sm:h-10 pointer-events-none select-none flex-shrink-0" />
     </div>
   );
 }
