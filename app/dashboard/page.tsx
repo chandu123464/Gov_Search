@@ -27,7 +27,10 @@ import {
   BookOpen,
   FileText,
   Download,
-  Eye
+  Eye,
+  Tv,
+  PlayCircle,
+  ExternalLink
 } from "lucide-react";
 import EmblemLogo from "@/components/EmblemLogo";
 import GovEmblem from "@/components/GovEmblem";
@@ -39,6 +42,7 @@ import {
   generateGoogleCalendarUrl 
 } from "@/lib/date-utils";
 import { STUDY_MATERIALS, StudyMaterial } from "@/lib/study-materials";
+import { VIDEO_PLAYLISTS, VideoPlaylist } from "@/lib/video-playlists";
 
 interface UserProfile {
   id: string;
@@ -58,10 +62,13 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes">("matching");
+  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes" | "video_classes">("matching");
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
   const [studyModuleFilter, setStudyModuleFilter] = useState<"All" | "Arithmetic" | "Advanced Maths" | "Reasoning">("All");
+  const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>("All");
+  const [videoLanguageFilter, setVideoLanguageFilter] = useState<"All" | "Hindi / English" | "Telugu">("All");
   const [activePdfViewer, setActivePdfViewer] = useState<StudyMaterial | null>(null);
+  const [activeVideoModal, setActiveVideoModal] = useState<VideoPlaylist | null>(null);
   const [dashboardSearch, setDashboardSearch] = useState("");
   const [activePosterJob, setActivePosterJob] = useState<any | null>(null);
 
@@ -136,6 +143,13 @@ export default function DashboardPage() {
     return Array.from(set).sort();
   }, [jobs]);
 
+  // Distinct categories across video playlists
+  const availableVideoCategories = useMemo(() => {
+    const set = new Set<string>();
+    VIDEO_PLAYLISTS.forEach((p) => set.add(p.category));
+    return Array.from(set);
+  }, []);
+
   // Filter study materials based on module and search
   const filteredStudyMaterials = useMemo(() => {
     let list = [...STUDY_MATERIALS];
@@ -158,6 +172,33 @@ export default function DashboardPage() {
 
     return list;
   }, [studyModuleFilter, dashboardSearch]);
+
+  // Filter video playlists based on category, language, and search
+  const filteredVideoPlaylists = useMemo(() => {
+    let list = [...VIDEO_PLAYLISTS];
+
+    if (videoCategoryFilter !== "All") {
+      list = list.filter((p) => p.category === videoCategoryFilter);
+    }
+
+    if (videoLanguageFilter !== "All") {
+      list = list.filter((p) => p.language === videoLanguageFilter);
+    }
+
+    if (dashboardSearch.trim()) {
+      const q = dashboardSearch.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.educatorChannel.toLowerCase().includes(q) ||
+          p.subject.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.targetExams.some((ex) => ex.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [videoCategoryFilter, videoLanguageFilter, dashboardSearch]);
 
   // Filter jobs based on active tab, category dropdown, and search text
   const filteredJobs = useMemo(() => {
@@ -225,8 +266,9 @@ export default function DashboardPage() {
       return userCats.some((cat) => j.government_field?.toLowerCase().includes(cat));
     }).length;
     const studyNotesCount = STUDY_MATERIALS.length;
+    const videoClassesCount = VIDEO_PLAYLISTS.length;
 
-    return { total, closingSoonCount, savedCount, matchedCount, studyNotesCount };
+    return { total, closingSoonCount, savedCount, matchedCount, studyNotesCount, videoClassesCount };
   }, [jobs, user]);
 
   return (
@@ -253,12 +295,18 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Center: Search across dashboard jobs & notes */}
+          {/* Center: Search across dashboard jobs, notes & videos */}
           <div className="relative flex-1 max-w-md mx-2 hidden md:block">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
             <input
               type="text"
-              placeholder={activeTab === "study_notes" ? "Search study notes by topic, algebra, reasoning..." : "Search vacancies by post, department, keyword..."}
+              placeholder={
+                activeTab === "study_notes"
+                  ? "Search study notes by topic, algebra, reasoning..."
+                  : activeTab === "video_classes"
+                  ? "Search video classes by educator, Telugu, Gagan Pratap, Parmar SSC..."
+                  : "Search vacancies by post, department, keyword..."
+              }
               value={dashboardSearch}
               onChange={(e) => setDashboardSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition"
@@ -301,7 +349,7 @@ export default function DashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition"
+              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -345,7 +393,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
-                {/* Tracked Sectors Row matching screenshot */}
+                {/* Tracked Sectors Row */}
                 <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
                   <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                     TRACKED SECTORS:
@@ -361,68 +409,74 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Statistics Overview Cards matching screenshot */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-shrink-0">
-                <div className="bg-blue-50/70 border border-blue-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+              {/* Statistics Overview Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-shrink-0">
+                <div className="bg-blue-50/70 border border-blue-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
-                    MATCHED JOBS
+                    MATCHED
                   </span>
-                  <span className="text-2xl font-black text-blue-600 block">{stats.matchedCount}</span>
+                  <span className="text-xl font-black text-blue-600 block">{stats.matchedCount}</span>
                 </div>
-                <div className="bg-red-50/70 border border-red-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                <div className="bg-red-50/70 border border-red-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
-                    CLOSING SOON
+                    CLOSING
                   </span>
-                  <span className="text-2xl font-black text-red-600 block">{stats.closingSoonCount}</span>
+                  <span className="text-xl font-black text-red-600 block">{stats.closingSoonCount}</span>
                 </div>
-                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
-                    TOTAL ACTIVE
+                    TOTAL JOBS
                   </span>
-                  <span className="text-2xl font-black text-emerald-600 block">{stats.total}</span>
+                  <span className="text-xl font-black text-emerald-600 block">{stats.total}</span>
                 </div>
-                <div className="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl p-3.5 text-center min-w-[90px] shadow-2xs">
+                <div className="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
                   <span className="text-[10px] font-black text-indigo-700 uppercase tracking-wider block mb-1">
-                    STUDY NOTES
+                    PDF NOTES
                   </span>
-                  <span className="text-2xl font-black text-indigo-600 block">{stats.studyNotesCount}</span>
+                  <span className="text-xl font-black text-indigo-600 block">{stats.studyNotesCount}</span>
+                </div>
+                <div className="bg-rose-50/70 border border-rose-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
+                  <span className="text-[10px] font-black text-rose-700 uppercase tracking-wider block mb-1">
+                    VIDEOS
+                  </span>
+                  <span className="text-xl font-black text-rose-600 block">{stats.videoClassesCount}</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab Navigation & Controls with CATEGORY / MODULE SECTION */}
+        {/* Tab Navigation & Controls with Dynamic Selector */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-b border-slate-200 pb-3">
           {/* Horizontal Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setActiveTab("matching")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
                 activeTab === "matching"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Recommended For You ({stats.matchedCount})</span>
+              <span>Recommended ({stats.matchedCount})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
                 activeTab === "all"
                   ? "bg-slate-900 text-white shadow-sm"
                   : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300"
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>All Active Vacancies ({stats.total})</span>
+              <span>All Active ({stats.total})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("closing_soon")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
                 activeTab === "closing_soon"
                   ? "bg-red-600 text-white shadow-sm"
                   : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300"
@@ -434,7 +488,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("saved")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
                 activeTab === "saved"
                   ? "bg-amber-500 text-white shadow-sm"
                   : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300"
@@ -444,10 +498,10 @@ export default function DashboardPage() {
               <span>Saved Jobs ({stats.savedCount})</span>
             </button>
 
-            {/* OPTION A: Study Notes Tab */}
+            {/* Study Notes Tab */}
             <button
               onClick={() => setActiveTab("study_notes")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
                 activeTab === "study_notes"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "bg-indigo-50/80 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300"
@@ -456,9 +510,22 @@ export default function DashboardPage() {
               <BookOpen className="w-3.5 h-3.5" />
               <span>Study Notes ({stats.studyNotesCount})</span>
             </button>
+
+            {/* OPTION A: Video Classes Tab */}
+            <button
+              onClick={() => setActiveTab("video_classes")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
+                activeTab === "video_classes"
+                  ? "bg-rose-600 text-white shadow-sm"
+                  : "bg-rose-50/80 text-rose-700 border border-rose-200 hover:bg-rose-100 hover:border-rose-300"
+              }`}
+            >
+              <Tv className="w-3.5 h-3.5" />
+              <span>Video Classes ({stats.videoClassesCount})</span>
+            </button>
           </div>
 
-          {/* Right Selector: Changes between Category (for jobs) and Module (for study notes) */}
+          {/* Right Selector: Changes between Category (jobs), Module (study notes), or Subject (video classes) */}
           {activeTab === "study_notes" ? (
             <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
               <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">
@@ -476,6 +543,27 @@ export default function DashboardPage() {
                   <option value="Reasoning">Reasoning (1)</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+          ) : activeTab === "video_classes" ? (
+            <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
+              <span className="text-xs font-black text-rose-700 uppercase tracking-wider">
+                SUBJECT:
+              </span>
+              <div className="relative">
+                <select
+                  value={videoCategoryFilter}
+                  onChange={(e) => setVideoCategoryFilter(e.target.value)}
+                  className="bg-white border border-rose-200 hover:border-rose-400 rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm font-bold text-rose-900 focus:outline-none focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-2xs appearance-none cursor-pointer min-w-[170px]"
+                >
+                  <option value="All">All Subjects (19)</option>
+                  {availableVideoCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-rose-400 absolute right-2.5 top-2.5 pointer-events-none" />
               </div>
             </div>
           ) : (
@@ -503,9 +591,193 @@ export default function DashboardPage() {
         </div>
 
         {/* ============================================================== */}
-        {/* TAB CONTENT: STUDY NOTES OR FULL-WIDTH HORIZONTAL JOB CARDS */}
+        {/* TAB 1: VIDEO CLASSES TAB (19 PLAYLISTS) */}
         {/* ============================================================== */}
-        {activeTab === "study_notes" ? (
+        {activeTab === "video_classes" ? (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Video Classes Intro Banner */}
+            <div className="bg-gradient-to-r from-rose-50/90 via-amber-50/40 to-white rounded-3xl p-5 sm:p-6 border border-rose-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-rose-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
+                    EXPERT VIDEO HUB
+                  </span>
+                  <span className="text-xs font-bold text-rose-900">
+                    19 Handpicked Masterclass Playlists by India&apos;s Top Educators
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-1.5">
+                  Best YouTube Classes for Central &amp; State Government Exams
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+                  Featuring Gagan Pratap, Parmar SSC, StudyIQ, Physics Wallah, Rani Ma&apos;am, Adda247 Telugu &amp; Hareesh Academy.
+                </p>
+              </div>
+
+              {/* Quick Language Toggle */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-600 mr-1">Language:</span>
+                {(["All", "Hindi / English", "Telugu"] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setVideoLanguageFilter(lang)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                      videoLanguageFilter === lang
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-rose-300"
+                    }`}
+                  >
+                    {lang === "Telugu" ? "🇮🇳 Telugu (తెలుగు)" : lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => setVideoCategoryFilter("All")}
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition flex-shrink-0 cursor-pointer ${
+                  videoCategoryFilter === "All"
+                    ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                All Subjects (19)
+              </button>
+              {availableVideoCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setVideoCategoryFilter(cat)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition flex-shrink-0 cursor-pointer ${
+                    videoCategoryFilter === cat
+                      ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                      : "bg-white text-slate-700 border-slate-200 hover:border-rose-300"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Video Playlists List */}
+            {filteredVideoPlaylists.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center space-y-3">
+                <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <Tv className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No video classes found</h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">
+                  No playlists matched your filter or search query. Try switching to &quot;All Subjects&quot; or clearing the search text.
+                </p>
+                <button
+                  onClick={() => {
+                    setVideoCategoryFilter("All");
+                    setVideoLanguageFilter("All");
+                    setDashboardSearch("");
+                  }}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+                >
+                  Reset Video Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredVideoPlaylists.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 hover:border-rose-300 hover:shadow-md transition-all duration-200 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative group"
+                  >
+                    {/* Left Column: Icon + Information */}
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className="w-13 h-13 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0 group-hover:scale-105 transition">
+                        <PlayCircle className="w-7 h-7" />
+                      </div>
+
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        {/* Channel Badge & Language Tag */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg border border-rose-200">
+                            {item.educatorChannel}
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {item.subject}
+                          </span>
+                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                            item.language === "Telugu"
+                              ? "bg-amber-50 text-amber-800 border-amber-300"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }`}>
+                            {item.language === "Telugu" ? "🇮🇳 Telugu Medium" : item.language}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-rose-600 transition block leading-snug">
+                          {item.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-xs sm:text-sm text-slate-600 line-clamp-2">
+                          {item.description}
+                        </p>
+
+                        {/* Highlights & Target Exams */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
+                          {item.verifiedBadges.map((badge) => (
+                            <span
+                              key={badge}
+                              className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-200 text-[11px] font-semibold"
+                            >
+                              ★ {badge}
+                            </span>
+                          ))}
+                          <span className="text-slate-400 text-[11px] font-medium ml-1">Target:</span>
+                          {item.targetExams.slice(0, 4).map((ex) => (
+                            <span
+                              key={ex}
+                              className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]"
+                            >
+                              {ex}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Actions */}
+                    <div className="flex sm:flex-row lg:flex-col items-center justify-between lg:justify-center gap-2.5 pt-3 lg:pt-0 lg:pl-6 border-t lg:border-t-0 lg:border-l border-slate-100 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideoModal(item)}
+                        className="w-full sm:w-auto lg:w-44 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 text-center cursor-pointer"
+                      >
+                        <PlayCircle className="w-4 h-4" />
+                        <span>Watch In-App</span>
+                      </button>
+
+                      <a
+                        href={item.playlistUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto lg:w-44 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 text-center border border-slate-200"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
+                        <span>YouTube Playlist</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "study_notes" ? (
+          /* ============================================================== */
+          /* TAB 2: STUDY NOTES TAB (17 HANDWRITTEN MATHS/REASONING PDFS)   */
+          /* ============================================================== */
           <div className="space-y-4 animate-in fade-in duration-200">
             {/* Study Material Intro Banner */}
             <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/50 to-white rounded-3xl p-5 sm:p-6 border border-indigo-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -533,7 +805,7 @@ export default function DashboardPage() {
                     key={mod}
                     type="button"
                     onClick={() => setStudyModuleFilter(mod)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer ${
                       studyModuleFilter === mod
                         ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                         : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
@@ -560,7 +832,7 @@ export default function DashboardPage() {
                     setStudyModuleFilter("All");
                     setDashboardSearch("");
                   }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
                 >
                   Reset Module Filter
                 </button>
@@ -650,6 +922,9 @@ export default function DashboardPage() {
             )}
           </div>
         ) : loading ? (
+          /* ============================================================== */
+          /* LOADING SKELETON                                               */
+          /* ============================================================== */
           <div className="space-y-4">
             {[1, 2, 3].map((n) => (
               <div
@@ -663,6 +938,9 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : filteredJobs.length === 0 ? (
+          /* ============================================================== */
+          /* EMPTY VACANCIES STATE                                          */
+          /* ============================================================== */
           <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center space-y-3">
             <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
               <Search className="w-7 h-7" />
@@ -677,12 +955,15 @@ export default function DashboardPage() {
                 setActiveTab("all");
                 setDashboardSearch("");
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
             >
               Reset Filters
             </button>
           </div>
         ) : (
+          /* ============================================================== */
+          /* TAB 3: FULL WIDTH HORIZONTAL JOB CARDS LIST                    */
+          /* ============================================================== */
           <div className="grid grid-cols-1 gap-4">
             {filteredJobs.map((job) => {
               const status = calculateJobStatus(job.start_date, job.last_date);
@@ -815,7 +1096,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => handleToggleSave(job.slug)}
-                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold border transition flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                           isSaved
                             ? "bg-amber-50 text-amber-700 border-amber-300"
                             : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
@@ -829,7 +1110,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setActivePosterJob(job)}
-                        className="py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition flex items-center gap-1"
+                        className="py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition flex items-center gap-1 cursor-pointer"
                         title="View Official Poster Card"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-amber-600" />
@@ -860,7 +1141,7 @@ export default function DashboardPage() {
           <div className="relative max-w-md w-full bg-white rounded-3xl p-4 shadow-2xl">
             <button
               onClick={() => setActivePosterJob(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-900 text-white font-black flex items-center justify-center shadow-lg hover:bg-slate-800"
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-900 text-white font-black flex items-center justify-center shadow-lg hover:bg-slate-800 cursor-pointer"
             >
               ✕
             </button>
@@ -916,6 +1197,96 @@ export default function DashboardPage() {
                 className="w-full h-full border-none"
                 title={activePdfViewer.title}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App YouTube Video Player Modal */}
+      {activeVideoModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-5xl h-[88vh] bg-slate-950 rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-800">
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between gap-4 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-rose-600 rounded-xl text-white flex-shrink-0">
+                  <PlayCircle className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-bold text-white truncate">
+                    {activeVideoModal.title}
+                  </h3>
+                  <span className="text-xs text-rose-400 block truncate">
+                    {activeVideoModal.educatorChannel} • {activeVideoModal.subject} • {activeVideoModal.language}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href={activeVideoModal.playlistUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in YouTube</span>
+                </a>
+
+                <button
+                  onClick={() => setActiveVideoModal(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition cursor-pointer"
+                  title="Close Video Player"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded YouTube Player or Responsive Channel Viewer */}
+            <div className="flex-1 w-full bg-black relative flex flex-col items-center justify-center">
+              {activeVideoModal.embedPlaylistId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/videoseries?list=${activeVideoModal.embedPlaylistId}&autoplay=1`}
+                  className="w-full h-full border-none"
+                  title={activeVideoModal.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="p-8 text-center max-w-xl space-y-4">
+                  <div className="w-16 h-16 bg-rose-600/20 text-rose-500 rounded-3xl flex items-center justify-center mx-auto border border-rose-500/30">
+                    <Tv className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-bold text-white">
+                      {activeVideoModal.educatorChannel}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-400">
+                      {activeVideoModal.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {activeVideoModal.targetExams.map((ex) => (
+                      <span key={ex} className="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg border border-slate-700">
+                        {ex}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="pt-2">
+                    <a
+                      href={activeVideoModal.playlistUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-6 rounded-2xl text-sm transition shadow-lg hover:shadow-rose-600/30"
+                    >
+                      <PlayCircle className="w-5 h-5" />
+                      <span>Start Playlist on Official YouTube Channel</span>
+                      <ExternalLink className="w-4 h-4 ml-1" />
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
