@@ -24,6 +24,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Government Jobs", href: "/government-jobs" },
+    { label: "Mock Tests & PYQs", href: "/mock-tests" },
     { label: "Results", href: "/results" },
     { label: "Exam Calendar", href: "/exam-calendar" },
     { label: "Syllabus", href: "/syllabus" },

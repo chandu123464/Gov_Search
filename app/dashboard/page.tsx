@@ -30,7 +30,13 @@ import {
   Eye,
   Tv,
   PlayCircle,
-  ExternalLink
+  ExternalLink,
+  FileCheck2,
+  Timer,
+  BarChart3,
+  Repeat,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import EmblemLogo from "@/components/EmblemLogo";
 import GovEmblem from "@/components/GovEmblem";
@@ -43,6 +49,13 @@ import {
 } from "@/lib/date-utils";
 import { STUDY_MATERIALS, StudyMaterial } from "@/lib/study-materials";
 import { VIDEO_PLAYLISTS, VideoPlaylist } from "@/lib/video-playlists";
+import { 
+  PRACTICE_RESOURCES, 
+  PracticeResource, 
+  SEVEN_STEP_ROUTINE, 
+  ExamRoutineStep, 
+  EXAM_COMBINATIONS 
+} from "@/lib/practice-resources";
 
 interface UserProfile {
   id: string;
@@ -62,15 +75,43 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes" | "video_classes">("matching");
+  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes" | "video_classes" | "mock_tests">("matching");
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
   const [studyModuleFilter, setStudyModuleFilter] = useState<"All" | "Arithmetic" | "Advanced Maths" | "Reasoning">("All");
   const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>("All");
   const [videoLanguageFilter, setVideoLanguageFilter] = useState<"All" | "Hindi / English" | "Telugu">("All");
+  const [practiceFilter, setPracticeFilter] = useState<string>("All Exams");
+  const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("all");
+  const [completedSteps, setCompletedSteps] = useState<number[]>([1, 2]);
   const [activePdfViewer, setActivePdfViewer] = useState<StudyMaterial | null>(null);
   const [activeVideoModal, setActiveVideoModal] = useState<VideoPlaylist | null>(null);
   const [dashboardSearch, setDashboardSearch] = useState("");
   const [activePosterJob, setActivePosterJob] = useState<any | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedSteps = localStorage.getItem("govsearch_routine_steps");
+      if (storedSteps) {
+        setCompletedSteps(JSON.parse(storedSteps));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleStep = (stepNumber: number) => {
+    setCompletedSteps((prev) => {
+      const next = prev.includes(stepNumber)
+        ? prev.filter((s) => s !== stepNumber)
+        : [...prev, stepNumber].sort((a, b) => a - b);
+      try {
+        localStorage.setItem("govsearch_routine_steps", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // Load candidate profile from localStorage or mock session
   useEffect(() => {
@@ -267,9 +308,34 @@ export default function DashboardPage() {
     }).length;
     const studyNotesCount = STUDY_MATERIALS.length;
     const videoClassesCount = VIDEO_PLAYLISTS.length;
+    const mockTestsCount = PRACTICE_RESOURCES.length;
 
-    return { total, closingSoonCount, savedCount, matchedCount, studyNotesCount, videoClassesCount };
+    return { total, closingSoonCount, savedCount, matchedCount, studyNotesCount, videoClassesCount, mockTestsCount };
   }, [jobs, user]);
+
+  const filteredPracticeResources = useMemo(() => {
+    return PRACTICE_RESOURCES.filter((res) => {
+      const matchCat =
+        practiceFilter === "All Exams" ||
+        res.category === practiceFilter ||
+        res.category === "All Exams" ||
+        res.targetExams.some((e) => e.toLowerCase().includes(practiceFilter.toLowerCase()));
+
+      const matchType =
+        practiceTypeFilter === "all" ||
+        res.resourceType === practiceTypeFilter ||
+        res.resourceType === "all_in_one";
+
+      const matchSearch =
+        !dashboardSearch ||
+        res.title.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+        res.platform.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+        res.description.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+        res.targetExams.some((e) => e.toLowerCase().includes(dashboardSearch.toLowerCase()));
+
+      return matchCat && matchType && matchSearch;
+    });
+  }, [practiceFilter, practiceTypeFilter, dashboardSearch]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
@@ -410,7 +476,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Statistics Overview Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 flex-shrink-0">
                 <div className="bg-blue-50/70 border border-blue-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
                     MATCHED
@@ -440,6 +506,12 @@ export default function DashboardPage() {
                     VIDEOS
                   </span>
                   <span className="text-xl font-black text-rose-600 block">{stats.videoClassesCount}</span>
+                </div>
+                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-2xl p-3 text-center min-w-[85px] shadow-2xs">
+                  <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block mb-1">
+                    PYQ & MOCKS
+                  </span>
+                  <span className="text-xl font-black text-emerald-700 block">{stats.mockTestsCount}</span>
                 </div>
               </div>
             </div>
@@ -523,10 +595,43 @@ export default function DashboardPage() {
               <Tv className="w-3.5 h-3.5" />
               <span>Video Classes ({stats.videoClassesCount})</span>
             </button>
+
+            {/* PYQs & Mocks Tab */}
+            <button
+              onClick={() => setActiveTab("mock_tests")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
+                activeTab === "mock_tests"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-emerald-50/80 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300"
+              }`}
+            >
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span>PYQs & Mocks ({stats.mockTestsCount})</span>
+            </button>
           </div>
 
-          {/* Right Selector: Changes between Category (jobs), Module (study notes), or Subject (video classes) */}
-          {activeTab === "study_notes" ? (
+          {/* Right Selector: Changes between Category (jobs), Module (study notes), Subject (video classes), or Exam (mocks) */}
+          {activeTab === "mock_tests" ? (
+            <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
+              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">
+                EXAM:
+              </span>
+              <div className="relative">
+                <select
+                  value={practiceFilter}
+                  onChange={(e) => setPracticeFilter(e.target.value)}
+                  className="bg-white border border-emerald-200 hover:border-emerald-400 rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm font-bold text-emerald-900 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 transition shadow-2xs appearance-none cursor-pointer min-w-[160px]"
+                >
+                  <option value="All Exams">All Exams (7)</option>
+                  <option value="SSC">SSC (CGL, CHSL, MTS)</option>
+                  <option value="Railway">Railways (RRB NTPC, Group D)</option>
+                  <option value="Banking">Banking (IBPS, SBI, RBI)</option>
+                  <option value="State PSC">State PSC (APPSC, TSPSC)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-emerald-500 absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+          ) : activeTab === "study_notes" ? (
             <div className="flex items-center gap-2.5 justify-end flex-shrink-0">
               <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">
                 MODULE:
@@ -920,6 +1025,253 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+          </div>
+        ) : activeTab === "mock_tests" ? (
+          /* ============================================================== */
+          /* TAB 3: MOCK TESTS & PYQS TAB (7 VERIFIED PLATFORMS & 7-STEP ROUTINE) */
+          /* ============================================================== */
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Banner */}
+            <div className="bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white rounded-3xl p-5 sm:p-6 border border-emerald-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
+                    EXAM PRACTICE &amp; ANSWER KEYS
+                  </span>
+                  <span className="text-xs font-bold text-emerald-900">
+                    Official SSC/PSC Keys • Authentic Shift-wise PYQs • Free Mocks
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-1.5">
+                  Previous Year Papers, Official Keys &amp; Free Mock Tests
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-2xl">
+                  Recommended strategy: Solve 5–10 years shift-wise PYQs, verify with authentic official answer keys, and take full-length mocks under real exam software conditions.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href="/mock-tests"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition shadow-sm hover:shadow flex items-center gap-2"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Public Hub</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* 7-Step Interactive Exam Routine Checklist */}
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Recommended Daily Routine
+                    </span>
+                    <span className="text-xs text-slate-500 font-semibold">
+                      Click steps to mark completed
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                    Your Personalized 7-Step Exam Preparation Checklist
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-700 block">
+                      {completedSteps.length} of 7 Done
+                    </span>
+                    <span className="text-[11px] text-emerald-600 font-bold">
+                      {Math.round((completedSteps.length / 7) * 100)}% Progress
+                    </span>
+                  </div>
+                  <div className="w-24 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-emerald-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(completedSteps.length / 7) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Steps Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+                {SEVEN_STEP_ROUTINE.map((st) => {
+                  const isDone = completedSteps.includes(st.step);
+                  return (
+                    <div
+                      key={st.step}
+                      onClick={() => toggleStep(st.step)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
+                        isDone
+                          ? "bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-2xs"
+                          : "bg-slate-50/60 border-slate-200/80 hover:border-slate-300 text-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${
+                            isDone ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"
+                          }`}>
+                            Step {st.step}
+                          </span>
+                          {isDone ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                          )}
+                        </div>
+                        <h4 className="text-xs font-black line-clamp-1 text-slate-900">
+                          {st.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-600 mt-1 line-clamp-3 leading-snug">
+                          {st.action}
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-slate-200/50">
+                        <span className="text-[10px] font-bold text-slate-500 block truncate">
+                          Source: {st.recommendedPlatform}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Smart Exam Combination Stacks */}
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-3">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                Targeted Exam Combination Stacks
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {EXAM_COMBINATIONS.map((combo) => (
+                  <div
+                    key={combo.examName}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between space-y-3"
+                  >
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 leading-snug">
+                        {combo.examName}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {combo.tagline}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                      {combo.recommendedStack.map((stk) => (
+                        <a
+                          key={stk.purpose}
+                          href={stk.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between text-[11px] p-1.5 rounded-lg bg-white border border-slate-200/70 hover:border-emerald-300 hover:text-emerald-700 transition"
+                        >
+                          <span className="font-medium truncate max-w-[150px]">{stk.source}</span>
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100 flex-shrink-0">
+                            {stk.badge}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Pills for Practice Resources */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {(["all", "pyq", "mock_test", "answer_key"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setPracticeTypeFilter(t)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer flex-shrink-0 ${
+                    practiceTypeFilter === t
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {t === "all" ? "All Practice Resources (7)" : t === "pyq" ? "Previous Year Papers (PYQs)" : t === "mock_test" ? "Free Mock Tests" : "Official Answer Keys"}
+                </button>
+              ))}
+            </div>
+
+            {/* Filtered Resources List */}
+            <div className="grid grid-cols-1 gap-4">
+              {filteredPracticeResources.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 hover:border-emerald-300 hover:shadow-md transition-all duration-200 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative group"
+                >
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className={`w-13 h-13 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition border ${
+                      item.isOfficial ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                    }`}>
+                      {item.resourceType === "answer_key" ? (
+                        <FileCheck2 className="w-7 h-7" />
+                      ) : item.resourceType === "pyq" ? (
+                        <BookOpen className="w-7 h-7" />
+                      ) : (
+                        <Timer className="w-7 h-7" />
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                          {item.platform}
+                        </span>
+                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${item.badgeColor}`}>
+                          {item.badge}
+                        </span>
+                        {item.isOfficial && (
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-300">
+                            ★ Official Government Source
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-emerald-700 transition block leading-snug">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-slate-600">
+                        {item.description}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
+                        {item.highlights.map((h, i) => (
+                          <span
+                            key={i}
+                            className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]"
+                          >
+                            ✓ {h}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="pt-1 text-[11px] text-emerald-800 font-bold">
+                        Best For: <span className="font-medium text-slate-600">{item.bestFor}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-row lg:flex-col items-center justify-between lg:justify-center gap-2.5 pt-3 lg:pt-0 lg:pl-6 border-t lg:border-t-0 lg:border-l border-slate-100 flex-shrink-0">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto lg:w-44 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 text-center"
+                    >
+                      <span>Practice Free Now</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : loading ? (
           /* ============================================================== */
