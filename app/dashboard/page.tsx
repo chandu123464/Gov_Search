@@ -36,7 +36,8 @@ import {
   BarChart3,
   Repeat,
   CheckSquare,
-  Square
+  Square,
+  X
 } from "lucide-react";
 import EmblemLogo from "@/components/EmblemLogo";
 import GovEmblem from "@/components/GovEmblem";
@@ -112,6 +113,31 @@ export default function DashboardPage() {
       return next;
     });
   };
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActivePosterJob(null);
+        setActivePdfViewer(null);
+        setActiveVideoModal(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Prevent background body scroll when any modal is open
+  useEffect(() => {
+    if (activePosterJob || activePdfViewer || activeVideoModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [activePosterJob, activePdfViewer, activeVideoModal]);
 
   // Load candidate profile from localStorage or mock session
   useEffect(() => {
@@ -1489,15 +1515,28 @@ export default function DashboardPage() {
 
       {/* Recruitment Poster Modal */}
       {activePosterJob && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="relative max-w-md w-full bg-white rounded-3xl p-4 shadow-2xl">
-            <button
-              onClick={() => setActivePosterJob(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-900 text-white font-black flex items-center justify-center shadow-lg hover:bg-slate-800 cursor-pointer"
-            >
-              ✕
-            </button>
-            <RecruitmentPosterCard job={activePosterJob} />
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActivePosterJob(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md overflow-y-auto p-4 sm:p-6"
+        >
+          {/* Always-Visible Fixed Screen-Corner Close Button */}
+          <button
+            onClick={() => setActivePosterJob(null)}
+            type="button"
+            aria-label="Close poster card"
+            title="Close Poster (Esc)"
+            className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[60] bg-red-600 hover:bg-red-700 text-white font-black rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-2xl transition transform hover:scale-110 active:scale-95 border-2 border-white cursor-pointer"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white stroke-[3]" />
+          </button>
+
+          <div className="relative w-full max-w-xl mx-auto my-6 sm:my-10">
+            <RecruitmentPosterCard 
+              job={activePosterJob} 
+              onClose={() => setActivePosterJob(null)} 
+            />
           </div>
         </div>
       )}

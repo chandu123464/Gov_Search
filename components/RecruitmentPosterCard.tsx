@@ -294,6 +294,18 @@ export default function RecruitmentPosterCard({ job, onClose }: PosterProps) {
         <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-slate-950 text-center py-1 rounded-lg text-[11px] font-black uppercase tracking-wider shadow">
           Govt Job Alert Portal • 100% Free Alerts
         </div>
+
+        {/* Bottom Close Button for easy closing after reading */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            type="button"
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-800/90 hover:bg-red-600 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition border border-slate-700 hover:border-red-500 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+          >
+            <X className="w-4 h-4 text-red-400 group-hover:text-white stroke-[2.5]" />
+            <span>Close Poster Card</span>
+          </button>
+        )}
       </div>
     </div>
   );
