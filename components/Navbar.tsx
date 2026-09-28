@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Bell, FileText, Clock, CheckCircle2, ChevronRight } from "lucide-react";
 import GovEmblem from "@/components/GovEmblem";
 
 export default function Navbar() {
@@ -11,6 +11,23 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [sscStatus, setSscStatus] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadSscNotification() {
+      try {
+        const res = await fetch("/api/ssc/status");
+        if (res.ok) {
+          const data = await res.json();
+          setSscStatus(data);
+        }
+      } catch (err) {
+        console.error("Failed to load SSC notification in navbar:", err);
+      }
+    }
+    loadSscNotification();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +41,15 @@ export default function Navbar() {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Government Jobs", href: "/government-jobs" },
+    { label: "My Applications", href: "/dashboard?tab=my_applications" },
     { label: "Results", href: "/results" },
     { label: "Exam Calendar", href: "/exam-calendar" },
     { label: "Syllabus", href: "/syllabus" },
     { label: "Blog", href: "/blog" },
     { label: "About", href: "/about" },
   ];
+
+  const isReleased = sscStatus?.appliedExam?.admitCardStatus === "RELEASED";
 
   return (
     <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
@@ -57,26 +77,31 @@ export default function Navbar() {
               const isActive =
                 link.href === "/"
                   ? pathname === "/"
-                  : pathname.startsWith(link.href);
+                  : pathname.startsWith(link.href.split("?")[0]);
 
               return (
                 <a
                   key={link.label}
                   href={link.href}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors relative ${
                     isActive
                       ? "bg-blue-50 text-blue-700 font-bold"
                       : "text-slate-700 hover:text-blue-600 hover:bg-slate-50"
                   }`}
                 >
                   {link.label}
+                  {link.label === "My Applications" && (
+                    <span className="ml-1.5 px-1.5 py-0.2 bg-amber-500 text-white text-[10px] font-black rounded-full uppercase">
+                      SSC 2026
+                    </span>
+                  )}
                 </a>
               );
             })}
           </nav>
 
-          {/* RIGHT: Search, Login, Sign Up */}
-          <div className="hidden sm:flex items-center gap-2.5">
+          {/* RIGHT: Search, Notifications, Login, Sign Up */}
+          <div className="hidden sm:flex items-center gap-2">
             <button
               onClick={() => setSearchModalOpen(!searchModalOpen)}
               aria-label="Search jobs"
@@ -85,23 +110,127 @@ export default function Navbar() {
               <Search className="w-5 h-5" />
             </button>
 
+            {/* NOTIFICATION BELL WITH FLYOUT */}
+            <div className="relative">
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                aria-label="View notifications"
+                className="p-2 rounded-full text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition relative"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white animate-pulse" />
+              </button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 py-3 z-50 animate-fadeIn">
+                  <div className="px-4 pb-2.5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-slate-900">Notifications</span>
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-black rounded-full">
+                        1 New
+                      </span>
+                    </div>
+                    <a
+                      href="/dashboard?tab=my_applications"
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      View Hub
+                    </a>
+                  </div>
+
+                  <div className="p-2 max-h-80 overflow-y-auto space-y-1.5">
+                    {/* Notification Item */}
+                    <div
+                      onClick={() => {
+                        router.push("/dashboard?tab=my_applications");
+                        setNotificationsOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-amber-50/80 hover:bg-amber-100/70 border border-amber-200 cursor-pointer transition flex items-start gap-3"
+                    >
+                      <div className="p-2 bg-amber-500 text-white rounded-lg flex-shrink-0 mt-0.5">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h5 className="font-bold text-xs text-slate-900 truncate">
+                            {isReleased ? "Admit Card Downloaded" : "Still Admit Card is not released"}
+                          </h5>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap">Just now</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                          {isReleased 
+                            ? "Your admit card is downloaded. Please check it in our Application."
+                            : "For your applied exam: SI/CPO Exam 2026 (Reg: 10011969007). Application confirmed. Hall tickets will be issued 3–7 days before CBT."}
+                        </p>
+                        <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-blue-700">
+                          <span>Check in Dashboard</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        router.push("/dashboard?tab=my_applications");
+                        setNotificationsOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 cursor-pointer transition flex items-start gap-3"
+                    >
+                      <div className="p-2 bg-emerald-600 text-white rounded-lg flex-shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h5 className="font-bold text-xs text-slate-900 truncate">
+                            Application Form Confirmed
+                          </h5>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap">27 Sep</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                          SSC SI/CPO Exam 2026 application submitted (Txn: 2633a826f75abcef7a). Center preferences: Bengaluru, Mysuru, Mangaluru.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-3 pt-2 border-t border-slate-100 text-center">
+                    <a
+                      href="/dashboard?tab=my_applications"
+                      className="text-xs font-bold text-slate-700 hover:text-blue-600 transition block py-1"
+                      onClick={() => setNotificationsOpen(false)}
+                    >
+                      Open My Applications & Admit Card Tracker &rarr;
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <a
-              href="/login"
-              className="px-4 py-1.5 border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded-lg text-sm font-semibold transition"
+              href="/dashboard"
+              className="px-3.5 py-1.5 border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded-lg text-sm font-semibold transition"
             >
-              Login
+              Dashboard
             </a>
 
             <a
-              href="/register"
+              href="/login"
               className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow transition"
             >
-              Sign Up
+              Portal Login
             </a>
           </div>
 
           {/* Mobile Menu & Search Icon */}
           <div className="flex sm:hidden items-center gap-1.5">
+            <button
+              onClick={() => router.push("/dashboard?tab=my_applications")}
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 relative"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse" />
+            </button>
             <button
               onClick={() => setSearchModalOpen(!searchModalOpen)}
               className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
@@ -150,7 +279,7 @@ export default function Navbar() {
             const isActive =
               link.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(link.href);
+                : pathname.startsWith(link.href.split("?")[0]);
 
             return (
               <a
@@ -170,18 +299,18 @@ export default function Navbar() {
 
           <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
             <a
-              href="/login"
+              href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
               className="flex-1 text-center py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50"
             >
-              Login
+              Dashboard
             </a>
             <a
-              href="/register"
+              href="/dashboard?tab=my_applications"
               onClick={() => setMobileMenuOpen(false)}
               className="flex-1 text-center py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
             >
-              Sign Up
+              My Applications
             </a>
           </div>
         </div>

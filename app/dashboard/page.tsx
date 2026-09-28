@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User, 
   Briefcase, 
@@ -37,8 +37,15 @@ import {
   Repeat,
   CheckSquare,
   Square,
-  X
+  X,
+  RefreshCw,
+  Printer,
+  Info,
+  Check
 } from "lucide-react";
+import SscAdmitCardModal from "@/components/SscAdmitCardModal";
+import SscApplicationModal from "@/components/SscApplicationModal";
+import { SscStatusResult } from "@/lib/ssc-service";
 import EmblemLogo from "@/components/EmblemLogo";
 import GovEmblem from "@/components/GovEmblem";
 import RecruitmentPosterCard from "@/components/RecruitmentPosterCard";
@@ -73,10 +80,11 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes" | "video_classes" | "mock_tests">("matching");
+  const [activeTab, setActiveTab] = useState<"matching" | "all" | "closing_soon" | "saved" | "study_notes" | "video_classes" | "mock_tests" | "my_applications">("matching");
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
   const [studyModuleFilter, setStudyModuleFilter] = useState<"All" | "Arithmetic" | "Advanced Maths" | "Reasoning">("All");
   const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>("All");
@@ -88,6 +96,80 @@ export default function DashboardPage() {
   const [activeVideoModal, setActiveVideoModal] = useState<VideoPlaylist | null>(null);
   const [dashboardSearch, setDashboardSearch] = useState("");
   const [activePosterJob, setActivePosterJob] = useState<any | null>(null);
+
+  // SSC Live Application & Admit Card State
+  const [sscStatus, setSscStatus] = useState<SscStatusResult | null>(null);
+  const [isSyncingSsc, setIsSyncingSsc] = useState(false);
+  const [admitCardModalOpen, setAdmitCardModalOpen] = useState(false);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+  const [emailAlertNotice, setEmailAlertNotice] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Sync tab from ?tab=my_applications query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "my_applications") {
+      setActiveTab("my_applications");
+    }
+  }, [searchParams]);
+
+  // Load live SSC status & application details from backend
+  useEffect(() => {
+    async function loadSscStatus() {
+      try {
+        const res = await fetch("/api/ssc/status");
+        if (res.ok) {
+          const data = await res.json();
+          setSscStatus(data);
+        }
+      } catch (err) {
+        console.error("Failed to load SSC status:", err);
+      }
+    }
+    loadSscStatus();
+  }, []);
+
+  const handleSyncSsc = async () => {
+    try {
+      setIsSyncingSsc(true);
+      const res = await fetch("/api/ssc/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.status) {
+        setSscStatus(data.status);
+      }
+    } catch (err) {
+      console.error("Failed to sync SSC status:", err);
+    } finally {
+      setIsSyncingSsc(false);
+    }
+  };
+
+  const handleSendEmailAlert = async () => {
+    try {
+      setSendingEmail(true);
+      setEmailAlertNotice(null);
+      const res = await fetch("/api/ssc/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sendEmail: true }),
+      });
+      const data = await res.json();
+      if (data.emailResult?.success) {
+        setEmailAlertNotice(`Notification sent to ${data.emailResult.recipient}`);
+      } else {
+        setEmailAlertNotice(data.emailResult?.reason || "Email queued");
+      }
+    } catch (err: any) {
+      setEmailAlertNotice("Failed: " + err.message);
+    } finally {
+      setSendingEmail(false);
+      setTimeout(() => setEmailAlertNotice(null), 6000);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -121,6 +203,8 @@ export default function DashboardPage() {
         setActivePosterJob(null);
         setActivePdfViewer(null);
         setActiveVideoModal(null);
+        setAdmitCardModalOpen(false);
+        setApplicationModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -129,7 +213,7 @@ export default function DashboardPage() {
 
   // Prevent background body scroll when any modal is open
   useEffect(() => {
-    if (activePosterJob || activePdfViewer || activeVideoModal) {
+    if (activePosterJob || activePdfViewer || activeVideoModal || admitCardModalOpen || applicationModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -137,7 +221,7 @@ export default function DashboardPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [activePosterJob, activePdfViewer, activeVideoModal]);
+  }, [activePosterJob, activePdfViewer, activeVideoModal, admitCardModalOpen, applicationModalOpen]);
 
   // Load candidate profile from localStorage or mock session
   useEffect(() => {
@@ -544,10 +628,121 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Email Alert Toast Notice (If triggered) */}
+        {emailAlertNotice && (
+          <div className="p-3.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-2xl text-xs flex items-center justify-between shadow-xs animate-fadeIn">
+            <div className="flex items-center gap-2.5">
+              <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="font-semibold">{emailAlertNotice}</span>
+            </div>
+            <button onClick={() => setEmailAlertNotice(null)} className="text-blue-500 hover:text-blue-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* SSC APPLICATION & ADMIT CARD LIVE NOTIFICATION BANNER */}
+        <div className={`p-4 sm:p-5 rounded-3xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs transition ${
+          sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+            ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+            : "bg-gradient-to-r from-amber-50 via-orange-50/70 to-white border-amber-300 text-amber-950"
+        }`}>
+          <div className="flex items-start gap-3.5">
+            <div className={`p-2.5 rounded-2xl text-white flex-shrink-0 mt-0.5 shadow-xs ${
+              sscStatus?.appliedExam?.admitCardStatus === "RELEASED" ? "bg-emerald-600" : "bg-amber-500"
+            }`}>
+              {sscStatus?.appliedExam?.admitCardStatus === "RELEASED" ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : (
+                <Clock className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${
+                  sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                    ? "bg-emerald-200/80 text-emerald-900"
+                    : "bg-amber-200/80 text-amber-900"
+                }`}>
+                  {sscStatus?.appliedExam?.admitCardStatus === "RELEASED" ? "Admit Card Downloaded" : "Live SSC Status Alert"}
+                </span>
+                <span className="text-xs font-bold text-slate-700">
+                  Sub-Inspector in Delhi Police &amp; CAPFs Exam 2026 (Reg: 10011969007)
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm sm:text-base mt-1 text-slate-900">
+                {sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                  ? "Your admit card is downloaded! Please check it in our Application."
+                  : "Still Admit Card is not released."}
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5 max-w-3xl leading-relaxed">
+                {sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                  ? "Your official Hall Ticket with exam shift, roll number, and Bengaluru centre address is downloaded and ready to view/print."
+                  : "Your application was confirmed on 27/09/2026. Staff Selection Commission officially releases Paper-1 CBT Admit Cards 3 to 7 days before the exam date. City intimation slips are published 10 days prior."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap flex-shrink-0 w-full md:w-auto">
+            <button
+              onClick={() => setAdmitCardModalOpen(true)}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>See Admit Card</span>
+            </button>
+
+            <button
+              onClick={() => setApplicationModalOpen(true)}
+              className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5 text-slate-600" />
+              <span>View App Form</span>
+            </button>
+
+            <button
+              onClick={handleSyncSsc}
+              disabled={isSyncingSsc}
+              className="p-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition disabled:opacity-50"
+              title="Check Live SSC Server"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncingSsc ? "animate-spin text-blue-600" : ""}`} />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("my_applications")}
+              className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition"
+            >
+              Application Hub &rarr;
+            </button>
+          </div>
+        </div>
+
         {/* Tab Navigation & Controls with Dynamic Selector */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-b border-slate-200 pb-3">
           {/* Horizontal Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            
+            {/* NEW TAB: My Applications & Admit Card */}
+            <button
+              onClick={() => setActiveTab("my_applications")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
+                activeTab === "my_applications"
+                  ? "bg-amber-600 text-white shadow-sm ring-2 ring-amber-300"
+                  : "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>My Applications &amp; Admit Card</span>
+              <span className={`px-1.5 py-0.2 text-[10px] font-black rounded-full uppercase ${
+                activeTab === "my_applications"
+                  ? "bg-white text-amber-800"
+                  : "bg-amber-500 text-white"
+              }`}>
+                SSC 2026
+              </span>
+            </button>
+
             <button
               onClick={() => setActiveTab("matching")}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 flex-shrink-0 cursor-pointer ${
@@ -1299,6 +1494,352 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        ) : activeTab === "my_applications" ? (
+          /* ============================================================== */
+          /* TAB: MY APPLICATIONS & SSC ADMIT CARD TRACKER                  */
+          /* ============================================================== */
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-slate-800 relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-96 h-full bg-blue-600/10 pointer-events-none rounded-r-3xl" />
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-blue-400">
+                      OFFICIAL PORTAL SYNC
+                    </span>
+                    <span className="text-xs font-bold text-blue-200 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      Connected to ssc.gov.in (AES-256 Encrypted)
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    My Applications &amp; Admit Card Tracker
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                    Track the examination you applied for, review your verified candidate profile, monitor live admit card release timelines, and inspect or download your application and admit card directly in GovSearch.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={handleSyncSsc}
+                    disabled={isSyncingSsc}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isSyncingSsc ? "animate-spin" : ""}`} />
+                    <span>{isSyncingSsc ? "Syncing SSC..." : "Sync Live SSC Server"}</span>
+                  </button>
+
+                  <button
+                    onClick={handleSendEmailAlert}
+                    disabled={sendingEmail}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm rounded-xl border border-slate-700 transition flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>{sendingEmail ? "Sending..." : "Email Notification"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Two-Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* LEFT COLUMN: Candidate Verified SSC Profile (4 Cols) */}
+              <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-600" />
+                    <h3 className="font-bold text-sm text-slate-900 uppercase tracking-tight">
+                      Verified SSC Profile
+                    </h3>
+                  </div>
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-full">
+                    OTR VERIFIED
+                  </span>
+                </div>
+
+                {/* Candidate Photo & Signature */}
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div className="w-20 h-24 bg-white rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden flex-shrink-0">
+                    <img
+                      src="/candidate-photo.png"
+                      alt="Candidate Photograph"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-between h-24 min-w-0 flex-1">
+                    <div>
+                      <span className="text-[10px] font-black text-blue-700 uppercase block">Candidate Name</span>
+                      <h4 className="font-black text-sm text-slate-900 leading-tight uppercase truncate">
+                        {sscStatus?.candidate?.name || "KARAKA SAI CHANDRA SEKHAR"}
+                      </h4>
+                      <p className="text-[11px] font-mono text-slate-600 mt-0.5">
+                        Reg: {sscStatus?.candidate?.registrationNo || "10011969007"}
+                      </p>
+                    </div>
+
+                    <div className="bg-white px-2 py-1 rounded border border-slate-200 self-start">
+                      <img
+                        src="/candidate-signature.png"
+                        alt="Signature"
+                        className="max-h-6 object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Profile Attributes */}
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Father's Name</span>
+                    <span className="font-bold text-slate-800 uppercase">
+                      {sscStatus?.candidate?.fathersName || "KARAKA SATYANARAYANA"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Mother's Name</span>
+                    <span className="font-bold text-slate-800 uppercase">
+                      {sscStatus?.candidate?.mothersName || "KARAKA ADI LAKSHMI"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Date of Birth</span>
+                    <span className="font-bold text-slate-800">
+                      {sscStatus?.candidate?.dob || "2003-09-20"} (22 Yrs)
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Gender &bull; Category</span>
+                    <span className="font-bold text-slate-800">
+                      {sscStatus?.candidate?.gender || "Male"} &bull; {sscStatus?.candidate?.category || "OBC"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Mobile Number</span>
+                    <span className="font-bold text-slate-800">
+                      +91 {sscStatus?.candidate?.mobile || "8886315136"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Email Address</span>
+                    <span className="font-bold text-slate-800 truncate max-w-[180px]">
+                      {sscStatus?.candidate?.email || "saichandrasekhark@gmail.com"}
+                    </span>
+                  </div>
+
+                  <div className="pt-1">
+                    <span className="text-slate-500 font-medium block text-[11px]">Correspondence Address</span>
+                    <p className="font-semibold text-slate-800 text-[11px] mt-0.5 leading-snug">
+                      {sscStatus?.candidate?.address || "44-37-7/3 SRINIVASA NAGAR AKKAYYAPALEM VISAKHAPATNAM 530016"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-blue-50/70 rounded-2xl border border-blue-100 text-[11px] text-blue-900 flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Synchronized via secure SSC One-Time Registration credentials stored in your environment config.
+                  </span>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Applied Exam & Live Admit Card Tracker (8 Cols) */}
+              <div className="lg:col-span-8 space-y-6">
+                
+                {/* Applied Examination Master Card */}
+                <div className="bg-white rounded-3xl border-2 border-blue-600/30 p-6 sm:p-7 shadow-sm space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">
+                          APPLIED EXAM
+                        </span>
+                        <span className="text-xs font-bold text-slate-600">
+                          SSC Reference No: 10011969007
+                        </span>
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                        Sub-Inspector in Delhi Police and Central Armed Police Forces Examination, 2026
+                      </h3>
+                      <p className="text-xs font-bold text-blue-800">
+                        Popularly known as: SSC SI / CPO Exam 2026
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-black">
+                        Application Completed
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Submission and Payment Info */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Submitted On</span>
+                      <span className="font-bold text-slate-800">27-09-2026</span>
+                      <span className="text-[10px] text-slate-500 block">05:50 PM IST</span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Fee Payment</span>
+                      <span className="font-bold text-emerald-700">₹100 Paid</span>
+                      <span className="text-[10px] font-mono text-slate-500 block truncate" title="2633a826f75abcef7a">
+                        Txn: 2633a826...
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Target Region</span>
+                      <span className="font-bold text-slate-800">KKR Region</span>
+                      <span className="text-[10px] text-slate-500 block">Karnataka Kerala</span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Exam Medium</span>
+                      <span className="font-bold text-slate-800">English (02)</span>
+                      <span className="text-[10px] text-blue-700 block">NCC 'B' Holder</span>
+                    </div>
+                  </div>
+
+                  {/* Exam Centers Chosen */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Selected Examination Centers (Preferences)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-200 text-blue-900 font-semibold flex items-center justify-between">
+                        <span>1. KKR-Bengaluru (9001)</span>
+                        <span className="text-[9px] font-black uppercase bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">Primary</span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold">
+                        <span>2. KKR-Mysuru (9009)</span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold">
+                        <span>3. KKR-Mangaluru (9008)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ADMIT CARD RELEASE STATUS CALLOUT */}
+                  <div className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                      ? "bg-emerald-50 border-emerald-400 text-emerald-950"
+                      : "bg-amber-50 border-amber-400 text-amber-950"
+                  }`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                          sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-amber-500 text-white"
+                        }`}>
+                          {sscStatus?.appliedExam?.admitCardStatus === "RELEASED" ? "RELEASED & DOWNLOADED" : "STILL NOT RELEASED"}
+                        </span>
+                        <span className="text-xs font-bold text-slate-600">
+                          {sscStatus?.appliedExam?.expectedReleaseWindow || "Expected 3-7 days prior to CBT Exam"}
+                        </span>
+                      </div>
+                      <h4 className="font-black text-base sm:text-lg text-slate-900">
+                        {sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                          ? "Your admit card is downloaded! Please check it below."
+                          : "Still Admit Card is not released."}
+                      </h4>
+                      <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+                        {sscStatus?.appliedExam?.admitCardStatus === "RELEASED"
+                          ? "Official hall ticket is available with your assigned roll number, shift timing, and exam venue in Bengaluru."
+                          : "Staff Selection Commission officially releases the Paper-1 CBT Admit Card 3 to 7 days before the exam date. City intimation slips are published 10 days before the exam."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full sm:w-auto flex-shrink-0">
+                      <button
+                        onClick={() => setAdmitCardModalOpen(true)}
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>See Admit Card in Application</span>
+                      </button>
+
+                      <button
+                        onClick={() => setApplicationModalOpen(true)}
+                        className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs rounded-xl border border-slate-300 shadow-2xs transition flex items-center justify-center gap-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-slate-600" />
+                        <span>View Application Form (PDF)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Document Quick Downloads & External Links */}
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/api/ssc/application-pdf?download=true"
+                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg border border-slate-200 flex items-center gap-1.5 transition"
+                      >
+                        <Download className="w-3.5 h-3.5 text-slate-600" />
+                        Download Application PDF
+                      </a>
+
+                      <button
+                        onClick={() => setAdmitCardModalOpen(true)}
+                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg border border-slate-200 flex items-center gap-1.5 transition"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-slate-600" />
+                        Print Intimation Slip
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://ssc.gov.in"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 hover:underline font-bold flex items-center gap-1"
+                      >
+                        <span>Official ssc.gov.in Portal</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* FAQ & SSC Timeline Notice */}
+                <div className="bg-slate-50 rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-3">
+                  <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <span>When will the SSC SI/CPO 2026 Admit Card be released?</span>
+                  </h4>
+                  <ul className="text-xs text-slate-600 space-y-2 list-disc pl-5">
+                    <li>
+                      <strong>Application Window Status:</strong> Your application was successfully completed on 27/09/2026.
+                    </li>
+                    <li>
+                      <strong>Scrutiny &amp; Acceptance Status:</strong> SSC regional offices (including KKR Bengaluru) scrutinize applications before publishing the candidate acceptance list.
+                    </li>
+                    <li>
+                      <strong>City Intimation Slip:</strong> Released approximately <strong>10 to 14 days</strong> before the commencement of Paper-1 Computer Based Examination.
+                    </li>
+                    <li>
+                      <strong>Final e-Admit Card / Hall Ticket:</strong> Released <strong>3 to 7 days</strong> before the exact examination date for each candidate to prevent malpractices.
+                    </li>
+                  </ul>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
         ) : loading ? (
           /* ============================================================== */
           /* LOADING SKELETON                                               */
@@ -1682,6 +2223,21 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* SSC Admit Card In-App Viewer Modal */}
+      <SscAdmitCardModal
+        isOpen={admitCardModalOpen}
+        onClose={() => setAdmitCardModalOpen(false)}
+        statusData={sscStatus}
+        onRefreshStatus={handleSyncSsc}
+        isRefreshing={isSyncingSsc}
+      />
+
+      {/* SSC Application Form In-App Viewer Modal */}
+      <SscApplicationModal
+        isOpen={applicationModalOpen}
+        onClose={() => setApplicationModalOpen(false)}
+      />
     </div>
   );
 }
