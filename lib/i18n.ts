@@ -1,0 +1,58 @@
+export type Lang = "en" | "hi";
+
+export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
+  en: {
+    brand_tag: "Find Government Jobs. Build a Better Future.",
+    nav_home: "Home",
+    nav_jobs: "Government Jobs",
+    nav_applications: "My Applications",
+    nav_results: "Results",
+    nav_calendar: "Exam Calendar",
+    nav_syllabus: "Syllabus",
+    nav_blog: "Blog",
+    nav_about: "About",
+    nav_login: "Portal Login",
+    nav_dashboard: "Dashboard",
+    nav_signup: "Sign Up",
+    nav_logout: "Sign out",
+    search_placeholder: "Search jobs by post name, organization, department...",
+    search: "Search",
+    hero_title: "Your Government Job,",
+    hero_title_accent: "One Click Away",
+    hero_sub: "Explore latest Central & State Government Jobs by Education, Department and Location.",
+    trending: "Trending",
+    notifications: "Notifications",
+    no_notifications: "No notifications yet. Save a job to get last-date alerts.",
+    view_all: "View all",
+    language: "Language",
+  },
+  hi: {
+    brand_tag: "सरकारी नौकरी खोजें। बेहतर भविष्य बनाएँ।",
+    nav_home: "होम",
+    nav_jobs: "सरकारी नौकरियाँ",
+    nav_applications: "मेरे आवेदन",
+    nav_results: "परिणाम",
+    nav_calendar: "परीक्षा कैलेंडर",
+    nav_syllabus: "पाठ्यक्रम",
+    nav_blog: "ब्लॉग",
+    nav_about: "हमारे बारे में",
+    nav_login: "पोर्टल लॉगिन",
+    nav_dashboard: "डैशबोर्ड",
+    nav_signup: "साइन अप",
+    nav_logout: "साइन आउट",
+    search_placeholder: "पद, संगठन, विभाग से नौकरी खोजें...",
+    search: "खोजें",
+    hero_title: "आपकी सरकारी नौकरी,",
+    hero_title_accent: "एक क्लिक दूर",
+    hero_sub: "शिक्षा, विभाग और स्थान के अनुसार केंद्रीय और राज्य सरकारी नौकरियाँ देखें।",
+    trending: "ट्रेंडिंग",
+    notifications: "सूचनाएँ",
+    no_notifications: "अभी कोई सूचना नहीं। अंतिम तिथि अलर्ट के लिए नौकरी सेव करें।",
+    view_all: "सभी देखें",
+    language: "भाषा",
+  },
+};
+
+export function t(lang: Lang, key: string): string {
+  return TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
+}
