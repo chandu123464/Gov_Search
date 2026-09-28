@@ -155,6 +155,10 @@ export function normalizeQualification(input: string): string {
   return raw;
 }
 
+export function mapDisplayQualToLevel(input: string): string {
+  return normalizeQualification(input);
+}
+
 /**
  * Builds the database Prisma query condition for qualification filtering.
  * When the user selects a qualification tab/filter:

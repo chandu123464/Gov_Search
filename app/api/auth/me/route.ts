@@ -14,13 +14,13 @@ export async function GET() {
       return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
     }
 
-    const userId = verifySessionToken(token);
-    if (!userId) {
+    const session = verifySessionToken(token);
+    if (!session) {
       return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.userId },
       select: {
         id: true,
         user_type: true,

@@ -1,11 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import HomeHero from "@/components/HomeHero";
+import TodayUpdatesSection from "@/components/TodayUpdatesSection";
 import JobsByEducationSection from "@/components/JobsByEducationSection";
 import StepFilterBar from "@/components/StepFilterBar";
 import InteractiveJobExplorer from "@/components/InteractiveJobExplorer";
 import TrustBadges from "@/components/TrustBadges";
+import { 
+  Award, 
+  Layers, 
+  FileText, 
+  BookOpen, 
+  Sparkles, 
+  ArrowRight,
+  Flame,
+  GraduationCap
+} from "lucide-react";
 
 interface Props {
   initialJobs: any[];
@@ -165,7 +177,81 @@ export default function HomePageClient({ initialJobs }: Props) {
       {/* 1. Hero Section matching HomePage.png */}
       <HomeHero onSearch={handleSearch} />
 
-      {/* 2. Jobs by Education 24 Pastel Cards Grid */}
+      {/* Quick Access Resource Portals (FreeJobAlert Reference Hub) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a
+          href="#today-updates"
+          className="bg-white hover:bg-rose-50/60 border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-sm hover:border-rose-300 transition group flex items-center gap-3"
+        >
+          <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Flame className="w-5 h-5 fill-rose-600" />
+          </div>
+          <div>
+            <span className="font-black text-xs sm:text-sm text-slate-900 block group-hover:text-rose-700 transition">
+              Today Updates
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Live Notifications &bull; Keys
+            </span>
+          </div>
+        </a>
+
+        <a
+          href="#jobs-by-education"
+          className="bg-white hover:bg-blue-50/60 border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-sm hover:border-blue-300 transition group flex items-center gap-3"
+        >
+          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <GraduationCap className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-black text-xs sm:text-sm text-slate-900 block group-hover:text-blue-700 transition">
+              Jobs by Education
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              96,178 Vacancies &bull; 15 Tiers
+            </span>
+          </div>
+        </a>
+
+        <Link
+          href="/exam-pattern"
+          className="bg-white hover:bg-indigo-50/60 border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-sm hover:border-indigo-300 transition group flex items-center gap-3"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Award className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-black text-xs sm:text-sm text-slate-900 block group-hover:text-indigo-700 transition">
+              Exam Pattern 2026
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Subject Schemes &amp; Marks
+            </span>
+          </div>
+        </Link>
+
+        <Link
+          href="/selection-process"
+          className="bg-white hover:bg-teal-50/60 border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-sm hover:border-teal-300 transition group flex items-center gap-3"
+        >
+          <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-black text-xs sm:text-sm text-slate-900 block group-hover:text-teal-700 transition">
+              Selection Process
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              CBT &rarr; PET &rarr; Typing &rarr; DV
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* 2. Today Updates Section (FreeJobAlert Today Updates) */}
+      <TodayUpdatesSection />
+
+      {/* 3. Jobs by Education & Vacancies 2026 (FreeJobAlert Education Section) */}
       <JobsByEducationSection
         selectedQual={selectedQual}
         onSelect={handleEducationSelect}

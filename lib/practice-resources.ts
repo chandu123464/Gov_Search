@@ -143,6 +143,50 @@ export const EXAM_COMBINATIONS: ExamCombination[] = [
 
 export const PRACTICE_RESOURCES: PracticeResource[] = [
   {
+    id: "freejobalert-slate-mock-test",
+    title: "FreeJobAlert Slate Online CBT Mock Tests (Free Series)",
+    platform: "FreeJobAlert Slate",
+    category: "All Exams",
+    resourceType: "mock_test",
+    badge: "Official FreeJobAlert CBT Slate",
+    badgeColor: "bg-rose-100 text-rose-800 border-rose-300",
+    url: "https://slate.freejobalert.com/mock-test/",
+    description: "Official FreeJobAlert Slate online Computer Based Test (CBT) practice engine. Practice real-exam simulation tests with timer, question palette, marks review, and instant performance analysis.",
+    highlights: [
+      "Online CBT simulator matching TCS-iON / NTA actual exam hall interface",
+      "Mock tests for SSC (CGL, CHSL, MTS, GD), Railways (NTPC, Group D), Banking, Defence & Police",
+      "Instant answer key, percentile ranking, and time management breakdown",
+      "100% Free to attempt without mandatory registration"
+    ],
+    targetExams: ["SSC CGL", "SSC CHSL", "SSC MTS", "RRB NTPC", "RRB Group D", "IBPS PO", "SBI Clerk", "Police Constable"],
+    languages: ["English", "Hindi"],
+    isFree: true,
+    frequencyOrCount: "Hundreds of Live Mock Tests",
+    bestFor: "Step 5: Full-length exam hall simulation practice on FreeJobAlert Slate."
+  },
+  {
+    id: "freejobalert-previous-papers",
+    title: "FreeJobAlert Previous Year Question Papers & Official Keys",
+    platform: "FreeJobAlert",
+    category: "All Exams",
+    resourceType: "pyq",
+    badge: "FreeJobAlert PYQ Archive",
+    badgeColor: "bg-blue-100 text-blue-800 border-blue-300",
+    url: "https://www.freejobalert.com/previous-papers/",
+    description: "Extensive repository of official previous years' question papers, preliminary & mains question sheets, and verified answer keys across all Indian government exams.",
+    highlights: [
+      "Shift-wise question papers organized by recruitment board and year",
+      "Direct 1-click PDF downloads of question sets and answer keys",
+      "Covers UPSC, SSC, Railways, Banking, Defence, Teaching, and State PSCs",
+      "Solved papers with official commission answer keys"
+    ],
+    targetExams: ["SSC", "Railway", "Banking", "UPSC", "State PSC", "Police", "Teaching", "Defence"],
+    languages: ["English", "Hindi"],
+    isFree: true,
+    frequencyOrCount: "500+ Official Papers",
+    bestFor: "Step 2: Downloading shift-wise previous question papers and official keys."
+  },
+  {
     id: "testbook-pyqs",
     title: "Testbook Previous Year Question Papers (PYQs)",
     platform: "Testbook",

@@ -26,19 +26,29 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   }
 }
 
+export type SessionPayload = {
+  userId: string;
+  isAdmin?: boolean;
+  exp: number;
+};
+
+export function createRandomToken(bytes = 32): string {
+  return crypto.randomBytes(bytes).toString("hex");
+}
+
 /**
  * Generate a signed session token
  */
-export function createSessionToken(userId: string): string {
-  const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })).toString("base64url");
+export function createSessionToken(userId: string, isAdmin: boolean = false): string {
+  const payload = Buffer.from(JSON.stringify({ userId, isAdmin, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })).toString("base64url");
   const signature = crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 }
 
 /**
- * Verify signed session token and return userId
+ * Verify signed session token and return SessionPayload
  */
-export function verifySessionToken(token: string): string | null {
+export function verifySessionToken(token: string): SessionPayload | null {
   try {
     const [payload, signature] = token.split(".");
     if (!payload || !signature) return null;
@@ -48,7 +58,11 @@ export function verifySessionToken(token: string): string | null {
     }
     const data = JSON.parse(Buffer.from(payload, "base64url").toString());
     if (data.exp < Date.now()) return null;
-    return data.userId;
+    return {
+      userId: data.userId,
+      isAdmin: Boolean(data.isAdmin),
+      exp: data.exp,
+    };
   } catch {
     return null;
   }

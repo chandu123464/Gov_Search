@@ -40,13 +40,13 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Government Jobs", href: "/government-jobs" },
+    { label: "Today Updates", href: "/#today-updates" },
+    { label: "Jobs by Education", href: "/#jobs-by-education" },
+    { label: "Exam Pattern", href: "/exam-pattern" },
+    { label: "Selection Process", href: "/selection-process" },
+    { label: "Previous Papers", href: "/previous-papers" },
+    { label: "Mock Tests", href: "/mock-tests" },
     { label: "My Applications", href: "/dashboard?tab=my_applications" },
-    { label: "Results", href: "/results" },
-    { label: "Exam Calendar", href: "/exam-calendar" },
-    { label: "Syllabus", href: "/syllabus" },
-    { label: "Blog", href: "/blog" },
-    { label: "About", href: "/about" },
   ];
 
   const isReleased = sscStatus?.appliedExam?.admitCardStatus === "RELEASED";
