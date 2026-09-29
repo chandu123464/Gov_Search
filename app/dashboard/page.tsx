@@ -78,7 +78,7 @@ interface UserProfile {
   saved_jobs: string[];
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -2239,5 +2239,22 @@ export default function DashboardPage() {
         onClose={() => setApplicationModalOpen(false)}
       />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="font-semibold text-sm">Loading Candidate Dashboard...</span>
+          </div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </React.Suspense>
   );
 }

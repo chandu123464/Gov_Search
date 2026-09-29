@@ -54,6 +54,10 @@ model GovernmentJob {
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
 
+  applications            ExamApplication[]
+  savedBy                 SavedJob[]
+  reminders               Reminder[]
+
   @@index([qualification])
   @@index([qualification_level])
   @@index([government_field])
@@ -76,14 +80,113 @@ model User {
   mobile               String?
   dob                  String
   gender               String
+  category             String   @default("GENERAL")
   qualification        String
+  qualification_level  String   @default("ANY GRADUATE")
   state                String
   city                 String
   preferred_categories String   @default("[]") // JSON string of selected category pills
   saved_jobs           String   @default("[]") // JSON string of saved job slugs
+  preferred_language   String   @default("en")
+  email_alerts         Boolean  @default(true)
+  whatsapp_alerts      Boolean  @default(false)
+  pwd                  Boolean  @default(false)
+  is_admin             Boolean  @default(false)
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
+
+  applications         ExamApplication[]
+  savedJobsRel         SavedJob[]
+  reminders            Reminder[]
+  notifications        Notification[]
+  resetTokens          PasswordResetToken[]
 
   @@index([email])
 }
 
+model ExamApplication {
+  id              String         @id @default(cuid())
+  userId          String
+  jobId           String?
+  examName        String
+  organization    String
+  registrationNo  String?
+  status          String         @default("APPLIED")
+  admitCardStatus String         @default("PENDING")
+  resultStatus    String?
+  appliedAt       DateTime       @default(now())
+  examDate        DateTime?
+  feeAmount       String?
+  notes           String?
+  officialUrl     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  job             GovernmentJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model SavedJob {
+  id        String        @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       GovernmentJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
+}
+
+model Reminder {
+  id         String        @id @default(cuid())
+  userId     String
+  jobId      String
+  channel    String        @default("inapp") // inapp, email, whatsapp
+  daysBefore Int           @default(7)
+  sent       Boolean       @default(false)
+  sentAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job        GovernmentJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId, channel, daysBefore])
+  @@index([userId])
+  @@index([jobId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // info, warning, success
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
