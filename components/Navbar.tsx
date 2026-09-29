@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Menu, X, Bell, FileText, Clock, CheckCircle2, ChevronRight } from "lucide-react";
+import { Search, Menu, X, Bell, FileText, Clock, CheckCircle2, ChevronRight, LogOut } from "lucide-react";
 import GovEmblem from "@/components/GovEmblem";
 
 export default function Navbar() {
@@ -13,6 +13,34 @@ export default function Navbar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sscStatus, setSscStatus] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [candidateName, setCandidateName] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("govsearch_user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setIsLoggedIn(true);
+        setCandidateName(parsed.full_name || "Candidate");
+      }
+    } catch {}
+  }, []);
+
+  const handleNavbarLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error in navbar:", err);
+    } finally {
+      try {
+        localStorage.removeItem("govsearch_user");
+        localStorage.removeItem("govsearch_routine_steps");
+      } catch {}
+      setIsLoggedIn(false);
+      window.location.href = "/login";
+    }
+  };
 
   useEffect(() => {
     async function loadSscNotification() {
@@ -206,19 +234,46 @@ export default function Navbar() {
               )}
             </div>
 
-            <a
-              href="/dashboard"
-              className="px-3.5 py-1.5 border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded-lg text-sm font-semibold transition"
-            >
-              Dashboard
-            </a>
+            {isLoggedIn ? (
+              <>
+                <a
+                  href="/dashboard"
+                  className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-bold transition flex items-center gap-1.5"
+                >
+                  <span>Dashboard</span>
+                  {candidateName && (
+                    <span className="text-xs font-normal text-blue-600 hidden xl:inline">
+                      ({candidateName.split(" ")[0]})
+                    </span>
+                  )}
+                </a>
 
-            <a
-              href="/login"
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow transition"
-            >
-              Portal Login
-            </a>
+                <button
+                  onClick={handleNavbarLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-sm font-bold transition shadow-2xs cursor-pointer"
+                  title="Sign Out of GovSearch"
+                >
+                  <LogOut className="w-4 h-4 text-red-600" />
+                  <span>Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/dashboard"
+                  className="px-3.5 py-1.5 border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded-lg text-sm font-semibold transition"
+                >
+                  Dashboard
+                </a>
+
+                <a
+                  href="/login"
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow transition"
+                >
+                  Portal Login
+                </a>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu & Search Icon */}
@@ -305,13 +360,26 @@ export default function Navbar() {
             >
               Dashboard
             </a>
-            <a
-              href="/dashboard?tab=my_applications"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 text-center py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
-            >
-              My Applications
-            </a>
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleNavbarLogout();
+                }}
+                className="flex-1 text-center py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-1.5 transition"
+              >
+                <LogOut className="w-3.5 h-3.5 text-red-600" />
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <a
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 text-center py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
+              >
+                Portal Login
+              </a>
+            )}
           </div>
         </div>
       )}

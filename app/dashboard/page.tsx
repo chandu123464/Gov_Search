@@ -267,9 +267,24 @@ function DashboardContent() {
     loadJobs();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("govsearch_user");
-    router.push("/login");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Failed to execute logout API:", err);
+    } finally {
+      try {
+        localStorage.removeItem("govsearch_user");
+        localStorage.removeItem("govsearch_routine_steps");
+      } catch {}
+      // Hard redirect ensures cookies are cleanly recognized as deleted by middleware
+      window.location.href = "/login";
+    }
   };
 
   const handleToggleSave = (jobSlug: string) => {
@@ -525,10 +540,16 @@ function DashboardContent() {
 
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition cursor-pointer"
-              title="Sign Out"
+              disabled={isLoggingOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs border border-red-200 hover:border-red-300 transition shadow-2xs cursor-pointer group disabled:opacity-50"
+              title="Sign Out of GovSearch"
             >
-              <LogOut className="w-4 h-4" />
+              {isLoggingOut ? (
+                <RefreshCw className="w-3.5 h-3.5 text-red-600 animate-spin" />
+              ) : (
+                <LogOut className="w-3.5 h-3.5 text-red-600 group-hover:translate-x-0.5 transition-transform" />
+              )}
+              <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
             </button>
           </div>
         </div>
@@ -567,6 +588,15 @@ function DashboardContent() {
                     <Mail className="w-3.5 h-3.5 text-slate-500" />
                     {user.email}
                   </span>
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1 rounded-xl font-bold transition shadow-2xs cursor-pointer ml-auto sm:ml-0 disabled:opacity-50"
+                    title="Sign Out of GovSearch"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-red-600" />
+                    <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+                  </button>
                 </div>
 
                 {/* Tracked Sectors Row */}
