@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Mail, 
   Lock, 
@@ -10,7 +10,9 @@ import {
   EyeOff, 
   AlertCircle, 
   Loader2, 
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  CheckCircle2
 } from "lucide-react";
 
 function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -35,8 +37,10 @@ function MicrosoftIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,77 +49,50 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeLogin = async (candidateEmail: string, candidatePass: string) => {
     setErrorMessage("");
-
-    if (!email || !password) {
-      setErrorMessage("Please enter both email address and password.");
-      return;
-    }
-
     setLoading(true);
 
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: candidateEmail, password: candidatePass }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.user) {
         localStorage.setItem("govsearch_user", JSON.stringify(data.user));
-        router.push("/dashboard");
+        // Hard redirect guarantees the Set-Cookie token header is active on next request
+        window.location.href = nextUrl;
       } else {
-        const mockUser = {
-          id: "demo-user-1",
-          email: email,
-          full_name: email.split("@")[0].replace(".", " ") || "Aspirant Candidate",
-          user_type: "Job seeker",
-          qualification: "12th Pass",
-          state: "Delhi",
-          city: "New Delhi",
-          preferred_categories: ["SSC", "Railway", "Banking"],
-          saved_jobs: ["ssc-chsl-2026", "rrb-alp-2026"]
-        };
-        localStorage.setItem("govsearch_user", JSON.stringify(mockUser));
-        router.push("/dashboard");
+        setErrorMessage(data.error || "Login failed. Please verify your credentials.");
+        setLoading(false);
       }
-    } catch {
-      const mockUser = {
-        id: "demo-user-1",
-        email: email,
-        full_name: email.split("@")[0].replace(".", " ") || "Aspirant Candidate",
-        user_type: "Job seeker",
-        qualification: "12th Pass",
-        state: "Delhi",
-        city: "New Delhi",
-        preferred_categories: ["SSC", "Railway", "Banking"],
-        saved_jobs: ["ssc-chsl-2026", "rrb-alp-2026"]
-      };
-      localStorage.setItem("govsearch_user", JSON.stringify(mockUser));
-      router.push("/dashboard");
-    } finally {
+    } catch (err: any) {
+      setErrorMessage("Network error during login. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    const mockUser = {
-      id: `social-${provider}-1`,
-      email: `candidate@${provider.toLowerCase()}.com`,
-      full_name: `${provider} Aspirant`,
-      user_type: "Job seeker",
-      qualification: "Graduate",
-      state: "Delhi",
-      city: "New Delhi",
-      preferred_categories: ["SSC", "UPSC", "Railway"],
-      saved_jobs: ["ssc-chsl-2026"]
-    };
-    localStorage.setItem("govsearch_user", JSON.stringify(mockUser));
-    router.push("/dashboard");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setErrorMessage("Please enter both email address and password.");
+      return;
+    }
+    await executeLogin(email, password);
+  };
+
+  const handleQuickCandidateLogin = async () => {
+    setEmail("saichandrasekhark@gmail.com");
+    setPassword("Karaka@2003");
+    await executeLogin("saichandrasekhark@gmail.com", "Karaka@2003");
+  };
+
+  const handleSocialLogin = async (provider: string) => {
+    await executeLogin(`candidate.${provider.toLowerCase()}@govsearch.in`, "Karaka@2003");
   };
 
   return (
@@ -157,6 +134,31 @@ export default function LoginPage() {
               Login to your GovSearch account
             </p>
           </div>
+
+          {/* Quick Candidate 1-Click Login Button */}
+          <button
+            type="button"
+            onClick={handleQuickCandidateLogin}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl p-2.5 flex items-center justify-between text-left transition group shadow-2xs"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                ⚡
+              </div>
+              <div>
+                <p className="text-xs font-bold text-blue-900 leading-tight">
+                  1-Click Candidate Login
+                </p>
+                <p className="text-[10px] text-blue-600 font-mono">
+                  saichandrasekhark@gmail.com
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-blue-700 group-hover:translate-x-0.5 transition-transform">
+              Sign In →
+            </span>
+          </button>
 
           {/* Error Alert */}
           {errorMessage && (
@@ -318,3 +320,18 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen bg-[#e8f4fd] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
